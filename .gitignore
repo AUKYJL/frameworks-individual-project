@@ -16,7 +16,10 @@ __pycache__/
 .coverage
 htmlcov/
 *.log
+.DS_Store
 
 # IDE settings
 .idea/
 .vscode/
+project.docx
+pr2.pdf
