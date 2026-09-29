@@ -5,15 +5,13 @@ from datetime import datetime
 from reminders import (
     REMINDER_STATUSES,
     VALID_CATEGORIES,
+    Reminder,
     add_reminder,
     cancel_reminder,
     filter_reminders_by_category,
     filter_reminders_by_status,
     find_reminders,
-    format_reminder,
-    get_category_message,
     get_reminder_statistics,
-    get_reminder_status,
     sort_reminders,
 )
 from storage import load_reminders, save_reminders
@@ -23,7 +21,6 @@ from utils import (
     input_int,
     input_non_empty_string,
 )
-
 
 MENU = """
 === Сервис напоминаний ===
@@ -40,7 +37,7 @@ MENU = """
 """
 
 
-def show_reminders(reminders: list[dict[str, int | str]]) -> None:
+def show_reminders(reminders: list[Reminder]) -> None:
     """Вывести список напоминаний с текущими статусами."""
     if not reminders:
         print("Список напоминаний пуст.")
@@ -48,17 +45,12 @@ def show_reminders(reminders: list[dict[str, int | str]]) -> None:
 
     current_time = datetime.now()
     for reminder in reminders:
-        remind_at = datetime.strptime(
-            str(reminder["remind_at"]), "%Y-%m-%dT%H:%M"
-        )
-        status = get_reminder_status(remind_at, current_time)
-        formatted_reminder = format_reminder(
-            "Пользователь", str(reminder["text"]), remind_at
-        )
-        category_message = get_category_message(str(reminder["category"]))
+        status = reminder.get_status(current_time)
+        formatted_reminder = reminder.format_for("Пользователь")
+        category_message = reminder.get_category_message()
         print(
-            f"ID: {reminder['id']} | {formatted_reminder} | "
-            f"Категория: {reminder['category']} | "
+            f"ID: {reminder.id} | {formatted_reminder} | "
+            f"Категория: {reminder.category} | "
             f"Статус: {status}\n{category_message}"
         )
 
@@ -84,24 +76,24 @@ def input_sort_order() -> bool:
         print("Введите 1 или 2.")
 
 
-def add_reminder_action(reminders: list[dict[str, int | str]]) -> None:
+def add_reminder_action(reminders: list[Reminder]) -> None:
     """Добавить напоминание и сохранить изменения."""
     text = input_non_empty_string("Введите текст: ")
     category = input_category("Введите категорию: ")
     remind_at = input_datetime().strftime("%Y-%m-%dT%H:%M")
     reminder = add_reminder(reminders, text, category, remind_at)
     if save_reminders(reminders):
-        print(f"Напоминание с ID {reminder['id']} добавлено.")
+        print(f"Напоминание с ID {reminder.id} добавлено.")
     else:
         reminders.remove(reminder)
         print("Напоминание не добавлено: не удалось сохранить данные.")
 
 
-def cancel_reminder_action(reminders: list[dict[str, int | str]]) -> None:
+def cancel_reminder_action(reminders: list[Reminder]) -> None:
     """Отменить напоминание и сохранить изменения."""
     reminder_id = input_int()
     reminder = next(
-        (item for item in reminders if item.get("id") == reminder_id), None
+        (item for item in reminders if item.id == reminder_id), None
     )
     if reminder is None:
         print("Напоминание с таким ID не найдено.")
@@ -116,7 +108,7 @@ def cancel_reminder_action(reminders: list[dict[str, int | str]]) -> None:
         print("Напоминание не отменено: не удалось сохранить данные.")
 
 
-def show_statistics(reminders: list[dict[str, int | str]]) -> None:
+def show_statistics(reminders: list[Reminder]) -> None:
     """Вывести общую статистику по напоминаниям."""
     statistics = get_reminder_statistics(reminders, datetime.now())
     print(f"Всего напоминаний: {statistics['total']}")
