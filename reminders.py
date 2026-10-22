@@ -66,7 +66,9 @@ class Reminder:
     """Напоминание с валидированными данными и поведением сущности."""
 
     def __init__(
-        self, id: int, text: str, category: str, remind_at: datetime
+        self, id: int, text: str, category: str, remind_at: datetime,
+        *, user_id: int | None = None, task_id: int | None = None,
+        time_id: int | None = None
     ) -> None:
         if (isinstance(id, bool) or not isinstance(id, int) or id <= 0):
             raise ValueError(
@@ -74,7 +76,7 @@ class Reminder:
             )
         if not isinstance(text, str) or not text.strip():
             raise ValueError("Текст напоминания не должен быть пустым.")
-        if category not in VALID_CATEGORIES:
+        if not isinstance(category, str) or category not in VALID_CATEGORIES:
             raise ValueError("Некорректная категория напоминания.")
         if not isinstance(remind_at, datetime):
             raise ValueError("Дата напоминания должна быть объектом datetime.")
@@ -82,6 +84,18 @@ class Reminder:
         self.text = text.strip()
         self.category = category
         self.remind_at = remind_at
+        for field, value in (
+            ("user_id", user_id), ("task_id", task_id),
+            ("time_id", time_id),
+        ):
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, int)
+                or value <= 0
+            ):
+                raise ValueError(f"{field} должен быть положительным ID.")
+        self.user_id = user_id
+        self.task_id = task_id
+        self.time_id = time_id
 
     def __str__(self) -> str:
         return (
@@ -101,6 +115,8 @@ class Reminder:
         if not isinstance(remind_at, datetime):
             raise ValueError("Дата напоминания должна быть объектом datetime.")
         self.remind_at = remind_at
+        # Смена даты делает прежнюю ссылку на Time неактуальной.
+        self.time_id = None
 
     def format_for(self, user_name: str) -> str:
         return format_reminder(user_name, self.text, self.remind_at)
@@ -109,12 +125,18 @@ class Reminder:
         return get_category_message(self.category)
 
     def to_dict(self) -> dict[str, int | str]:
-        return {
+        data = {
             "id": self.id,
             "text": self.text,
             "category": self.category,
             "remind_at": self.remind_at.strftime("%Y-%m-%dT%H:%M"),
         }
+        # Старый JSON ПР3 не содержит ссылок. Сохраняем совместимость.
+        for field in ("user_id", "task_id", "time_id"):
+            value = getattr(self, field)
+            if value is not None:
+                data[field] = value
+        return data
 
 
 def _validate_reminder(reminder: Reminder) -> None:

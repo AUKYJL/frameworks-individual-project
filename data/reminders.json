@@ -3,12 +3,18 @@
         "id": 1,
         "text": "Подготовить домашнее задание",
         "category": "учёба",
-        "remind_at": "2026-09-25T14:30"
+        "remind_at": "2026-09-25T14:30",
+        "user_id": 1,
+        "task_id": 1,
+        "time_id": 1
     },
     {
         "id": 2,
         "text": "йцу",
         "category": "работа",
-        "remind_at": "1000-01-27T12:30"
+        "remind_at": "1000-01-27T12:30",
+        "user_id": 2,
+        "task_id": 2,
+        "time_id": 2
     }
 ]

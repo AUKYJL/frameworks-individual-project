@@ -42,8 +42,16 @@ def _validate_reminders(data: Any) -> list[dict[str, int | str]]:
             raise ValueError(
                 f"Текст напоминания №{index} не должен быть пустым."
             )
-        if reminder["category"] not in VALID_CATEGORIES:
+        if (not isinstance(reminder["category"], str)
+                or reminder["category"] not in VALID_CATEGORIES):
             raise ValueError(f"Категория напоминания №{index} недопустима.")
+        for field in ("user_id", "task_id", "time_id"):
+            linked_id = reminder.get(field)
+            if linked_id is not None and (
+                isinstance(linked_id, bool)
+                or not isinstance(linked_id, int) or linked_id <= 0
+            ):
+                raise ValueError(f"Поле {field} №{index} должно быть ID.")
         remind_at = reminder["remind_at"]
         if not isinstance(remind_at, str):
             raise ValueError(f"Дата напоминания №{index} должна быть строкой.")
@@ -71,6 +79,9 @@ def load_reminders() -> list[Reminder] | None:
             Reminder(
                 item["id"], item["text"], item["category"],
                 datetime.strptime(item["remind_at"], "%Y-%m-%dT%H:%M"),
+                user_id=item.get("user_id"),
+                task_id=item.get("task_id"),
+                time_id=item.get("time_id"),
             )
             for item in data
         ]
