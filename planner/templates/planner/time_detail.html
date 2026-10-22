@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}{{ time.label }}{% endblock %}
+{% block content %}
+<h1 class="h2 mb-4">{{ time.label }}</h1>
+<section class="card shadow-sm"><div class="card-body p-4">
+  <dl class="row mb-0 gy-2"><dt class="col-sm-3">ID</dt><dd class="col-sm-9">{{ time.id }}</dd>
+    <dt class="col-sm-3">Название</dt><dd class="col-sm-9">{{ time.label }}</dd>
+    <dt class="col-sm-3">Момент</dt><dd class="col-sm-9">{{ time.moment|date:'d.m.Y H:i' }}</dd>
+  </dl>
+</div></section>
+<h2 class="h5 mt-4">Связанные напоминания</h2><ul class="list-group">
+{% for reminder in reminders %}<li class="list-group-item"><a href="{% url 'planner:reminder_detail' reminder.id %}">{{ reminder.text }}</a></li>
+{% empty %}<li class="list-group-item text-muted">Нет напоминаний</li>{% endfor %}
+</ul>
+<a class="btn btn-outline-primary mt-4" href="{% url 'planner:time_list' %}">← Вернуться к списку</a>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ task.title|default:'Задача' }}{% endblock %}
+{% block content %}
+<h1 class="h2 mb-4">{{ task.title }}</h1>
+<section class="card shadow-sm"><div class="card-body p-4">
+  <dl class="row mb-0 gy-2">
+    <dt class="col-sm-3">ID</dt><dd class="col-sm-9">{{ task.id }}</dd>
+    <dt class="col-sm-3">Описание</dt><dd class="col-sm-9 value">{{ task.description|default:'Без описания' }}</dd>
+    <dt class="col-sm-3">Пользователь</dt><dd class="col-sm-9"><a href="{% url 'planner:user_detail' user.id %}">{{ user.name }}</a></dd>
+    <dt class="col-sm-3">Категория</dt><dd class="col-sm-9"><a href="{% url 'planner:category_detail' category.id %}">{{ category.name }}</a></dd>
+    <dt class="col-sm-3">Выполнение</dt><dd class="col-sm-9">{% include 'planner/includes/task_status.html' %}</dd>
+  </dl>
+</div></section>
+<h2 class="h5 mt-4">Связанные напоминания</h2>
+<ul class="list-group">
+{% for reminder in reminders %}<li class="list-group-item"><a href="{% url 'planner:reminder_detail' reminder.id %}">{{ reminder.text }}</a></li>
+{% empty %}<li class="list-group-item text-muted">Нет напоминаний</li>{% endfor %}
+</ul>
+<a class="btn btn-outline-primary mt-4" href="{% url 'planner:task_list' %}">← Вернуться к списку</a>
+{% endblock %}

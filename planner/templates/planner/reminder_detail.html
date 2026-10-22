@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Напоминание №{{ reminder.id }}{% endblock %}
+{% block content %}
+<h1 class="h2 mb-4">Напоминание №{{ reminder.id }}</h1>
+<section class="card shadow-sm"><div class="card-body p-4">
+  <dl class="row mb-0 gy-2">
+    <dt class="col-sm-3">Текст</dt><dd class="col-sm-9 value">{{ reminder.text }}</dd>
+    <dt class="col-sm-3">Категория</dt><dd class="col-sm-9"><a href="{% url 'planner:category_detail' category.id %}">{{ category.name }}</a></dd>
+    <dt class="col-sm-3">Дата и время</dt><dd class="col-sm-9">{{ reminder.remind_at|date:'d.m.Y H:i' }}</dd>
+    <dt class="col-sm-3">Статус</dt><dd class="col-sm-9">{% include 'planner/includes/status_badge.html' %}</dd>
+    {% if user %}<dt class="col-sm-3">Пользователь</dt><dd class="col-sm-9"><a href="{% url 'planner:user_detail' user.id %}">{{ user.name }}</a></dd>{% endif %}
+    {% if task %}<dt class="col-sm-3">Задача</dt><dd class="col-sm-9"><a href="{% url 'planner:task_detail' task.id %}">{{ task.title }}</a></dd>{% endif %}
+    {% if time %}<dt class="col-sm-3">Время</dt><dd class="col-sm-9"><a href="{% url 'planner:time_detail' time.id %}">{{ time.label }}</a></dd>{% endif %}
+  </dl>
+</div></section>
+<a class="btn btn-outline-primary mt-4" href="{% url 'planner:reminder_list' %}">← Вернуться к списку</a>
+{% endblock %}

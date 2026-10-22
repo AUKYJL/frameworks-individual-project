@@ -1,0 +1,11 @@
+<article class="card entity-card reminder-card h-100 shadow-sm">
+  <div class="card-body d-flex flex-column">
+    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+      <span class="muted-label">Напоминание №{{ entry.reminder.id }}</span>
+      {% include 'planner/includes/status_badge.html' with status=entry.status %}
+    </div>
+    <h2 class="h5 value">{{ entry.reminder.text|default:'Без текста' }}</h2>
+    <p class="text-muted small mb-3">{{ entry.reminder.category|capfirst }} · {{ entry.reminder.remind_at|date:'d.m.Y H:i' }}</p>
+    <a class="btn btn-outline-primary btn-sm mt-auto align-self-start" href="{% url 'planner:reminder_detail' entry.reminder.id %}">Подробнее</a>
+  </div>
+</article>

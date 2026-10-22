@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Задачи{% endblock %}
+{% block content %}
+<h1>Задачи</h1>
+<p class="text-muted">Всего задач: {{ entries|length }} · Данные из data/tasks.json</p>
+<div class="row g-3">
+{% for entry in entries %}
+  <div class="col-md-6">{% include 'planner/includes/task_card.html' %}</div>
+{% empty %}
+  <p class="alert alert-info">Задач пока нет.</p>
+{% endfor %}
+</div>
+{% endblock %}

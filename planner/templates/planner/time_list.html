@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Время{% endblock %}
+{% block content %}
+<h1>Время</h1><p class="text-muted">Планируемые моменты: {{ times|length }}</p>
+<div class="list-group shadow-sm">
+{% for time in times %}
+<a class="list-group-item list-group-item-action entity-item p-3" href="{% url 'planner:time_detail' time.id %}">
+  <span class="fw-semibold">{{ time.label|default:'Без названия' }}</span>
+  <span class="d-block text-muted small">{{ time.moment|date:'d.m.Y H:i' }}</span>
+</a>
+{% empty %}<p class="list-group-item">Время пока не задано.</p>{% endfor %}
+</div>
+{% endblock %}

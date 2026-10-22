@@ -1,0 +1,5 @@
+{% if task.is_completed %}
+  <span class="badge text-bg-success task-status task-status-complete">Выполнено</span>
+{% else %}
+  <span class="badge text-bg-primary task-status task-status-open">В работе</span>
+{% endif %}

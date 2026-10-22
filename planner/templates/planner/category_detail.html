@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Категория {{ category.name }}{% endblock %}
+{% block content %}
+<h1 class="h2 mb-4">{{ category.name|capfirst }}</h1>
+<section class="card shadow-sm"><div class="card-body p-4">
+  <dl class="row mb-0 gy-2"><dt class="col-sm-3">ID</dt><dd class="col-sm-9">{{ category.id }}</dd>
+    <dt class="col-sm-3">Описание</dt><dd class="col-sm-9 value">{{ category.description|default:'Без описания' }}</dd>
+  </dl>
+</div></section>
+<div class="row g-4 mt-2">
+  <section class="col-md-6"><h2 class="h5">Задачи ({{ tasks|length }})</h2><ul class="list-group">
+    {% for task in tasks %}<li class="list-group-item"><a href="{% url 'planner:task_detail' task.id %}">{{ task.title }}</a></li>
+    {% empty %}<li class="list-group-item text-muted">Нет задач</li>{% endfor %}
+  </ul></section>
+  <section class="col-md-6"><h2 class="h5">Напоминания ({{ reminders|length }})</h2><ul class="list-group">
+    {% for reminder in reminders %}<li class="list-group-item"><a href="{% url 'planner:reminder_detail' reminder.id %}">{{ reminder.text }}</a></li>
+    {% empty %}<li class="list-group-item text-muted">Нет напоминаний</li>{% endfor %}
+  </ul></section>
+</div>
+<a class="btn btn-outline-primary mt-4" href="{% url 'planner:category_list' %}">← Вернуться к списку</a>
+{% endblock %}

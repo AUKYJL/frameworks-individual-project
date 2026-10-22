@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Напоминания{% endblock %}
+{% block content %}
+<h1>Напоминания</h1>
+<p class="text-muted">Всего напоминаний: {{ entries|length }} · Данные из data/reminders.json</p>
+<div class="row g-3">
+{% for entry in entries %}
+  <div class="col-md-6">{% include 'planner/includes/reminder_card.html' %}</div>
+{% empty %}
+  <p class="alert alert-info">Напоминаний пока нет.</p>
+{% endfor %}
+</div>
+{% endblock %}

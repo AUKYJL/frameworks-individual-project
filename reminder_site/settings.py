@@ -1,4 +1,4 @@
-"""Настройки учебного Django-проекта ПР5."""
+"""Настройки учебного Django-проекта ПР6."""
 
 import os
 from pathlib import Path
@@ -35,7 +35,7 @@ ROOT_URLCONF = "reminder_site.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -50,7 +50,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "reminder_site.wsgi.application"
 ASGI_APPLICATION = "reminder_site.asgi.application"
 
-# БД нужна только встроенным приложениям Django. Данные ПР5 — в JSON.
+# БД нужна только встроенным приложениям Django. Данные проекта — в JSON.
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

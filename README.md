@@ -1,163 +1,122 @@
-# Reminderly — сервис напоминаний
+# Reminderly — сервис напоминаний (ПР6)
 
-Учебный индивидуальный проект, который развивается от консольного приложения
-(ПР1–ПР3) к веб-приложению на **Django 5.2** (ПР5).
+Учебный индивидуальный проект на Python и Django 5.2. Развивается последовательно от консольной версии (ПР1–ПР3) через простые Django-страницы (ПР5) к **Django Templates** (ПР6).
 
-В ПР5 основные сущности доступны для просмотра в браузере. Консольное приложение,
-бизнес-логика и JSON-хранилище сохранены. Django ORM, регистрация и формы для
-редактирования здесь **намеренно не реализованы**: согласно методичке, они будут
-изучаться на следующих практических работах.
+**Результат ПР6:** HTML полностью вынесен из `views.py` в шаблоны, подключены базовый шаблон, наследование, `include`, контекст, циклы, условия, фильтры, именованные ссылки, собственные CSS, JavaScript и логотип. Предыдущие сущности, JSON и консольная версия сохранены.
 
-## Подготовка и запуск
+## 1. Установка и запуск
 
-Рекомендуется Python **3.11+** (в методичке используется Python 3.11).
-В терминале из корня проекта:
+Нужен Python 3.11+ и доступ к Python-пакетам при установке.
+
+**macOS / Linux:**
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python manage.py migrate
 python manage.py check
+python manage.py migrate
 python manage.py runserver
 ```
 
-Открыть **http://127.0.0.1:8000/**.
+**Windows PowerShell:**
 
-На Windows активация окружения: `.venv\Scripts\activate`, команды запуска —
-`python` вместо `python3`. Bootstrap подключается с CDN: для его внешнего вида
-браузеру нужен доступ в интернет. Основное содержимое страниц работает локально.
-
-Консольная версия также остаётся доступной:
-
-```bash
-python main.py
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python manage.py check
+python manage.py migrate
+python manage.py runserver
 ```
 
-## Предметная область
+Сайт: <http://127.0.0.1:8000/>. Bootstrap подключается через CDN и требует интернета для загрузки его стилей, но собственный CSS/JS/логотип Django отдаёт локально при `DEBUG=True`. Без Bootstrap базовые страницы продолжают отображаться.
 
-В проекте используются **пять сущностей**:
+Консольная версия остаётся доступна через `python main.py`.
 
-| Сущность | Python-класс | Основные поля | Назначение |
-| --- | --- | --- | --- |
-| Пользователь | `models.users.User` | `id`, `name`, `email` | Владелец задачи или напоминания |
-| Напоминание | `reminders.Reminder` | `id`, `text`, `category`, `remind_at`, опциональные ссылки | Событие, о котором следует напомнить |
-| Категория | `models.categories.Category` | `id`, `name`, `description` | Учёба / работа / личное |
-| Время | `models.times.Time` | `id`, `label`, `moment` | Отдельный плановый момент |
-| Задача | `models.tasks.Task` | `id`, `title`, `description`, `user_id`, `category_id`, `is_completed` | Дело пользователя |
+## 2. Предметная область и JSON
 
-Связи между сущностями:
+| Объект | Python-класс | Назначение |
+| --- | --- | --- |
+| Пользователь | `models.users.User` | Имя, email; связан с задачами и напоминаниями |
+| Напоминание | `reminders.Reminder` | Текст, категория, дата/время, необязательные связи с User/Task/Time |
+| Категория | `models.categories.Category` | Категория учёбы, работы или личных дел |
+| Время | `models.times.Time` | Плановый момент, связанный с напоминанием |
+| Задача | `models.tasks.Task` | Название, описание, владелец, категория, статус |
 
-```text
-User (1) ──────< Task >────── (1) Category
-  │                 │
-  └──< Reminder >───┘
-           │
-           ├── Category (по прежнему строковому полю category)
-           └── Time (по time_id, значение remind_at совпадает с moment)
-```
+Данные хранятся в `data/reminders.json`, `data/users.json`, `data/categories.json`, `data/times.json`, `data/tasks.json`. Модуль `project_data.py` загружает пять коллекций, собирает Python-объекты и проверяет целостность ссылок. Старый формат напоминаний и консольное хранение из ПР3 не менялись.
 
-Ссылки хранятся как числовые ID. `project_data.load_project_data()` создаёт
-объекты из JSON, проверяет ссылки и позволяет найти связанный объект. Объект
-`Reminder` сохранил свой прежний конструктор и методы из ПР3; поля `user_id`,
-`task_id`, `time_id` добавлены как **необязательные**. Старые записи без этих
-полей продолжают читаться и сохраняться в прежнем формате.
+`models.User` — пользователь как объект предметной области, не `django.contrib.auth.User`. Django ORM для пользовательских сущностей **пока нет**; встроенная SQLite используется лишь для служебных таблиц Django. Изменение/создание/удаление через веб-формы **не реализовано**: в ПР6 оно не требуется, это следующий этап курса. Веб-маршруты работают только по GET; POST возвращает 405.
 
-Пользователь `models.User` — **объект предметной области**, а не аккаунт для
-входа на сайт. Django предоставляет отдельный `django.contrib.auth.User`.
-Аутентификация не входит в ПР5.
+## 3. Страницы
 
-### JSON-хранилище
+| URL | Отображаемые данные | Шаблон |
+| --- | --- | --- |
+| `/` | Главная с подсчётом объектов пяти коллекций | `homepage/index.html` |
+| `/reminders/` | Список напоминаний, время и статус | `planner/reminder_list.html` |
+| `/reminders/<id>/` | Текст, дата, связи с категорией, пользователем, задачей, временем | `planner/reminder_detail.html` |
+| `/tasks/` | Список задач со статусами | `planner/task_list.html` |
+| `/tasks/<id>/` | Задача, пользователь, категория и напоминания | `planner/task_detail.html` |
+| `/users/` и `/users/<id>/` | Пользователи и их задачи/напоминания | `planner/user_*.html` |
+| `/categories/` и `/categories/<id>/` | Категории и связанные объекты | `planner/category_*.html` |
+| `/times/` и `/times/<id>/` | Моменты времени и связанные напоминания | `planner/time_*.html` |
 
-- `data/reminders.json` — исходные напоминания из ПР3, дополненные ID связей;
-- `data/users.json` — пользователи;
-- `data/categories.json` — справочник категорий;
-- `data/times.json` — плановые моменты;
-- `data/tasks.json` — задачи.
+Неизвестные идентификаторы возвращают HTTP **404** с `errors/not_found.html`; неизвестные адреса используют тот же шаблон при `DEBUG=False`. При ошибке чтения JSON возвращается статус **500** с `errors/data_error.html`.
 
-**Важно:** значения `text` и `remind_at` исходных напоминаний сохранены без
-исправлений, включая необычную дату `1000-01-27`: она была в исходном архиве.
-При изменении JSON следите за согласованностью ссылок.
+## 4. Как работают Django Templates
 
-## Страницы Django
+1. В `reminder_site/settings.py` установлен `TEMPLATES[0]["DIRS"] = [BASE_DIR / "templates"]` и `APP_DIRS=True`.
+2. `templates/base.html` содержит общий `<head>`, CSS, навигацию, подвал и блоки `{% block title %}` и `{% block content %}`. Все страницы расширяют его через `{% extends 'base.html' %}`.
+3. Общая навигация подключена через `{% include 'includes/navigation.html' %}`. Повторяемые карточки и бейджи подключаются из `planner/templates/planner/includes/`.
+4. `homepage/views.py` и `planner/views.py` получают Python-объекты и передают данные в шаблоны через `render(request, '...', context)` — **функция `page()` из ПР5 удалена**.
+5. В дочерних шаблонах используются атрибуты объектов `{{ reminder.text }}`, циклы `{% for %}` и `{% empty %}`, условия `{% if %}` и фильтры `length`, `default`, `date`, `capfirst`. HTML-значения Django экранирует по умолчанию.
+6. Маршруты имеют имена `homepage:index` и `planner:reminder_detail`, `planner:task_list` и т.д. Ссылки строятся через `{% url 'planner:reminder_detail' reminder.id %}`.
+7. `base.html` подключает через `{% load static %}` файлы `homepage/css/style.css`, `homepage/js/main.js`, а навигация использует `homepage/img/logo.svg`. Скрипт подставляет текущий год в подвале.
 
-| URL | Назначение и view-функция |
-| --- | --- |
-| `/` | Главная, `homepage.views.index` |
-| `/reminders/` | Список напоминаний, `planner.views.reminders` |
-| `/reminders/<int:reminder_id>/` | Карточка напоминания, `reminder_detail` |
-| `/users/` | Список пользователей, `users` |
-| `/users/<int:user_id>/` | Карточка пользователя, `user_detail` |
-| `/categories/` | Категории, `categories` |
-| `/categories/<int:category_id>/` | Карточка категории, `category_detail` |
-| `/times/` | Список моментов, `times` |
-| `/times/<int:time_id>/` | Карточка времени, `time_detail` |
-| `/tasks/` | Список задач, `tasks` |
-| `/tasks/<int:task_id>/` | Карточка задачи, `task_detail` |
-
-Каждое представление получает HTTP-запрос, загружает данные через
-`load_project_data()`, при необходимости находит объект по ID и возвращает
-`HttpResponse` с полноценной HTML-страницей. Несуществующие ID возвращают
-**404**. Обработчик `homepage.views.page_not_found` оформляет неизвестный адрес
-при `DEBUG=False`. Для проверки можно временно запустить сервер так:
-
-```bash
-DJANGO_DEBUG=0 python manage.py runserver
-```
-
-На Windows: `set DJANGO_DEBUG=0` перед запуском сервера.
-
-HTML собирается общей функцией `homepage.views.page()` и использует **Bootstrap
-5.3**, немного собственного CSS и адаптивную сетку. Это учебный переходный
-подход, как в ПР5; Django Templates и `render()` появятся позднее.
-
-Все страницы только для **GET**: POST-запросы на них возвращают 405.
-Добавлять и удалять напоминания можно через прежнее консольное меню.
-
-## Структура
+## 5. Структура проекта
 
 ```text
 individual-project/
-├── manage.py                    # команды Django
-├── reminder_site/               # settings / urls / wsgi / asgi
-├── homepage/                    # главная, HTML-каркас, обработчик 404
-├── planner/                     # десять представлений и URL пяти сущностей
-├── models/                      # User, Reminder, Category, Time, Task
-├── reminders.py                 # существующая бизнес-логика напоминаний
-├── storage.py                   # чтение/запись reminders.json из ПР3
-├── project_data.py              # загрузка 5 коллекций и проверка ссылок
-├── data/                         # пять JSON-файлов
-├── tests/                        # прежние и новые тесты
-├── main.py                       # прежнее консольное меню
-├── utils.py                      # консольный ввод
-├── requirements.txt
-├── ПЛАН_ПР5.md                   # анализ и план работ
-└── README.md
+├── reminder_site/                 # Django settings / urls / wsgi / asgi
+├── templates/
+│   ├── base.html                  # Общий HTML-каркас
+│   ├── includes/navigation.html  # Общая навигация
+│   └── errors/                    # 404 и ошибка JSON
+├── homepage/
+│   ├── views.py                   # Главная через render()
+│   ├── templates/homepage/index.html
+│   └── static/homepage/
+│       ├── css/style.css
+│       ├── js/main.js
+│       └── img/logo.svg
+├── planner/
+│   ├── views.py                   # Получение объектов и подготовка контекста
+│   └── templates/planner/        # Списки, детали, includes
+├── models/                       # Пять классов предметной области
+├── data/                         # Пять JSON-файлов
+├── project_data.py               # Загрузка и проверка JSON-ссылок
+├── reminders.py, storage.py, main.py, utils.py  # Код ПР3
+├── tests/                        # Python и HTTP-тесты
+├── ПЛАН_ПР5.md
+├── ПЛАН_ПР6.md                   # Анализ PDF, план и чек-лист защиты
+├── manage.py
+└── requirements.txt
 ```
 
-Файлы `homepage/models.py` и `planner/models.py` оставлены без ORM-моделей
-специально. Создавать таблицы для предметных сущностей на этом этапе не нужно.
-`python manage.py migrate` создаёт **только служебные таблицы Django**.
-
-## Тесты и качество
+## 6. Проверка
 
 ```bash
-python -m pytest -v
-python -m flake8 .
 python manage.py check
+python -m pytest -v
+python -m flake8 . --extend-exclude=venv
 ```
 
-Присутствуют проверки прежней логики, нового объектного слоя,
-JSON-связей, маршрутов, HTTP 200/404, пользовательской 404-страницы и метода
-POST (405). Web-тесты выполняются при установленном Django.
+HTTP-тесты выполняются, когда установлен Django: они проверяют все страницы, шаблоны, 404, GET-only, статические ресурсы и экранирование HTML. Остальные тесты проверяют сущности, JSON и прежнюю бизнес-логику. Для проверки кастомной страницы неизвестного маршрута используйте `DJANGO_DEBUG=0 python manage.py runserver` (Windows PowerShell: `$env:DJANGO_DEBUG="0"`).
 
-## Что сделано и что отложено
+В среде сборки архива Django и flake8 установить не удалось из-за отсутствия сетевого доступа. Поэтому пройдены офлайн-тесты Python, а HTTP-тесты и `manage.py check` необходимо выполнить после установки `requirements.txt` у себя.
 
-**ПР5:** сохранена консольная версия, добавлены четыре новые предметные
-сущности, пять JSON-коллекций, Django-проект, приложения `homepage` и `planner`,
-view-функции, маршрутизация, страницы с Bootstrap, обработка 404 и новые тесты.
+**Git:** изменения сохраняются в текущем репозитории коммитом с префиксом `PR6:`.
 
-**Последующие работы:** Django ORM и миграция JSON в БД, шаблоны Django,
-формы редактирования, регистрация и разграничение доступа. Дополнительные
-требования из материалов Яндекс Практикума выполняются отдельно в учебной
-платформе; исходников её заданий этот архив не содержит.
+## 7. Что дальше
+
+Переход на Django ORM и базу данных для предметных сущностей, веб-формы, CRUD, аутентификация пользователей. Материалы Яндекс Практикума («HTML и шаблоны Django», «Блогикум») проходятся отдельно на образовательной платформе.

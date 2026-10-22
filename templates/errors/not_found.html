@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}404 — не найдено{% endblock %}
+{% block content %}
+<section class="card shadow-sm"><div class="card-body p-5">
+  <p class="text-muted mb-2">Ошибка 404</p>
+  <h1 class="h2">{% if entity_name %}{{ entity_name }} не найдено{% else %}Страница не найдена{% endif %}</h1>
+  <p>Проверьте адрес или вернитесь на главную страницу.</p>
+  <a class="btn btn-primary" href="{% url 'homepage:index' %}">Вернуться на главную</a>
+</div></section>
+{% endblock %}

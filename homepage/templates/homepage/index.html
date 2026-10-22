@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<section class="hero p-4 p-md-5 mb-4">
+  <span class="text-primary fw-semibold">Мой учебный проект</span>
+  <h1 class="display-5 fw-bold mt-2">Сервис напоминаний</h1>
+  <p class="lead mb-0">Напоминания, задачи, категории, пользователи и время в одном месте.</p>
+</section>
+<h2 class="h4 mb-3">Разделы проекта</h2>
+<div class="row g-3">
+  {% for section in sections %}
+    <div class="col-sm-6 col-lg-4">
+      <a class="text-decoration-none" href="{% url section.route %}">
+        <article class="card summary-card h-100 shadow-sm"><div class="card-body">
+          <span class="muted-label">{{ section.name|default:'Раздел' }}</span>
+          <h3 class="h3 my-2">{{ section.count }}</h3>
+          <p class="text-secondary mb-0">{{ section.hint }} →</p>
+        </div></article>
+      </a>
+    </div>
+  {% empty %}
+    <p>Разделов пока нет.</p>
+  {% endfor %}
+</div>
+<p class="text-muted mt-4">Данные загружаются из JSON. В этой практической работе доступен просмотр записей.</p>
+{% endblock %}

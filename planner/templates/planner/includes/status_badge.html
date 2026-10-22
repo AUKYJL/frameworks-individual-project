@@ -1,0 +1,5 @@
+{% if status.positive %}
+  <span class="badge text-bg-success reminder-status reminder-status-active">{{ status.label|default:'Актуально' }}</span>
+{% else %}
+  <span class="badge text-bg-secondary reminder-status reminder-status-past">{{ status.label|default:'Неактуально' }}</span>
+{% endif %}
