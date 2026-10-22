@@ -2,6 +2,6 @@
 {% block title %}Ошибка данных{% endblock %}
 {% block content %}
 <h1>Ошибка чтения данных</h1>
-<p>Не удалось загрузить JSON. Проверьте содержимое файлов в папке data.</p>
+<p>Не удалось прочитать данные SQLite. Проверьте наличие файла data/reminderly.sqlite и правильность структуры таблиц.</p>
 <a href="{% url 'homepage:index' %}" class="btn btn-outline-primary">На главную</a>
 {% endblock %}

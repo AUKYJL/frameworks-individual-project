@@ -1,7 +1,15 @@
 {% extends 'base.html' %}
 {% block title %}Пользователи{% endblock %}
 {% block content %}
-<h1>Пользователи</h1><p class="text-muted">Всего пользователей: {{ users|length }}</p>
+<h1>Пользователи</h1>
+<div class="mb-3"><a class="btn btn-primary" href="{% url 'planner:user_create' %}">+ Добавить</a></div><p class="text-muted">Всего пользователей: {{ users|length }}</p>
+<form class="card card-body mb-3" method="get" action="{% url 'planner:user_list' %}">
+  <div class="row g-3 align-items-end">
+    {% include 'planner/includes/search_input.html' with placeholder="Имя или email" %}
+    <div class="col-md-3"><a class="btn btn-outline-secondary w-100" href="{% url 'planner:user_list' %}">Сбросить</a></div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Найти</button></div>
+  </div>
+</form>
 <div class="list-group shadow-sm">
 {% for user in users %}
   <a class="list-group-item list-group-item-action entity-item p-3" href="{% url 'planner:user_detail' user.id %}">

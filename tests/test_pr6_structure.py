@@ -56,7 +56,7 @@ def test_views_do_not_build_html_strings():
 def test_all_pages_extend_base_template():
     paths = list((ROOT / "planner/templates/planner").glob("*.html"))
     paths += list((ROOT / "homepage/templates/homepage").glob("*.html"))
-    assert len(paths) == 11
+    assert len(paths) >= 11
     for path in paths:
         assert "{% extends 'base.html' %}" in path.read_text(
             encoding="utf-8"

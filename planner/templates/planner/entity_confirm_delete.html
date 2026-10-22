@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Удаление · {{ entity }}{% endblock %}
+{% block content %}
+<h1 class="h2 mb-4">Удаление: {{ entity|lower }}</h1>
+<div class="card shadow-sm"><div class="card-body p-4">
+  {% if error %}<p class="alert alert-warning" role="alert">{{ error }}</p>{% endif %}
+  <p>Удалить запись №{{ record.id }}?</p>
+  <p class="text-muted">После удаления восстановить её через интерфейс нельзя. Связанные записи автоматически не удаляются.</p>
+  <form method="post">{% csrf_token %}
+    <button type="submit" class="btn btn-danger">Да, удалить</button>
+    <a class="btn btn-outline-secondary ms-2" href="{{ back_url }}">Отмена</a>
+  </form>
+</div></div>
+{% endblock %}

@@ -18,6 +18,7 @@
          href="{% url 'planner:user_list' %}">Пользователи</a>
       <a class="nav-link {% if request.resolver_match.url_name == 'time_list' or request.resolver_match.url_name == 'time_detail' %}active{% endif %}"
          href="{% url 'planner:time_list' %}">Время</a>
+      <a class="nav-link {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}" href="{% url 'planner:statistics' %}">Статистика</a>
     </div>
   </nav>
 </header>

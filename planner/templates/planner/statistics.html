@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Статистика{% endblock %}
+{% block content %}
+<h1>Статистика сервиса</h1>
+<p class="text-muted">Показатели рассчитываются функциями COUNT, SUM, GROUP BY и HAVING в SQLite.</p>
+<div class="row g-3 mb-4">
+  <div class="col-sm-4"><div class="card card-body h-100"><span class="text-muted">Всего задач</span><strong class="display-6">{{ totals.total_tasks }}</strong></div></div>
+  <div class="col-sm-4"><div class="card card-body h-100"><span class="text-muted">Выполнено задач</span><strong class="display-6">{{ totals.completed_tasks }}</strong></div></div>
+  <div class="col-sm-4"><div class="card card-body h-100"><span class="text-muted">Напоминаний</span><strong class="display-6">{{ reminder_count }}</strong></div></div>
+</div>
+<div class="row g-4">
+  <section class="col-md-6"><h2 class="h5">Задачи по категориям</h2>
+    <ul class="list-group">{% for item in by_category %}
+      <li class="list-group-item d-flex justify-content-between gap-2"><a href="{% url 'planner:category_detail' item.id %}">{{ item.name|capfirst }}</a><span>{{ item.task_count }} (выполнено: {{ item.done_count }})</span></li>
+    {% empty %}<li class="list-group-item">Нет категорий</li>{% endfor %}</ul>
+  </section>
+  <section class="col-md-6"><h2 class="h5">Задачи по пользователям</h2>
+    <ul class="list-group">{% for item in by_user %}
+      <li class="list-group-item d-flex justify-content-between gap-2"><a href="{% url 'planner:user_detail' item.id %}">{{ item.name }}</a><span>{{ item.task_count }} (выполнено: {{ item.done_count }})</span></li>
+    {% empty %}<li class="list-group-item">Нет пользователей</li>{% endfor %}</ul>
+  </section>
+  <section class="col-md-6"><h2 class="h5">Напоминания по категориям</h2>
+    <ul class="list-group">{% for item in by_reminder_category %}
+      <li class="list-group-item d-flex justify-content-between gap-2"><span>{{ item.name|capfirst }}</span><strong>{{ item.reminder_count }}</strong></li>
+    {% empty %}<li class="list-group-item">Нет категорий</li>{% endfor %}</ul>
+  </section>
+  <section class="col-md-6"><h2 class="h5">Пользователи с заданным количеством задач</h2>
+    <form class="d-flex align-items-end gap-2 mb-3" method="get">
+      <div><label for="min_tasks" class="form-label">Минимум задач</label>
+        <input id="min_tasks" class="form-control" type="number" name="min_tasks" value="{{ min_tasks }}" min="1" max="100"></div>
+      <button class="btn btn-primary" type="submit">Применить</button>
+    </form>
+    <ul class="list-group">{% for item in busy_users %}
+      <li class="list-group-item d-flex justify-content-between"><span>{{ item.name }}</span><strong>{{ item.task_count }}</strong></li>
+    {% empty %}<li class="list-group-item">Нет пользователей с таким количеством задач.</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}

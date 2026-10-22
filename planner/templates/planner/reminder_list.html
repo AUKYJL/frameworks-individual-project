@@ -2,7 +2,35 @@
 {% block title %}Напоминания{% endblock %}
 {% block content %}
 <h1>Напоминания</h1>
-<p class="text-muted">Всего напоминаний: {{ entries|length }} · Данные из data/reminders.json</p>
+<div class="mb-3"><a class="btn btn-primary" href="{% url 'planner:reminder_create' %}">+ Добавить</a></div>
+<p class="text-muted">Всего напоминаний: {{ entries|length }} · Данные из SQLite</p>
+<form class="card card-body mb-3" method="get" action="{% url 'planner:reminder_list' %}">
+  <div class="row g-3 align-items-end">
+    {% include 'planner/includes/search_input.html' with placeholder="Текст напоминания" %}
+    <div class="col-md-3"><label class="form-label" for="reminder-category">Категория</label>
+      <select class="form-select" name="category" id="reminder-category">
+        <option value="0">Все категории</option>
+        {% for category in categories %}
+        <option value="{{ category.id }}" {% if category.id == selected_category %}selected{% endif %}>{{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label" for="reminder-before">До даты</label>
+      <input class="form-control" id="reminder-before" type="date" name="before" value="{{ before }}">
+    </div>
+    <div class="col-md-3"><label class="form-label" for="reminder-status">Статус</label>
+      <select class="form-select" id="reminder-status" name="status">
+        <option value="all" {% if status == 'all' %}selected{% endif %}>Любой</option>
+        <option value="upcoming" {% if status == 'upcoming' %}selected{% endif %}>Ещё не наступило</option>
+        <option value="current" {% if status == 'current' %}selected{% endif %}>Актуально</option>
+        <option value="overdue" {% if status == 'overdue' %}selected{% endif %}>Просрочено</option>
+      </select>
+    </div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Найти</button></div>
+  </div>
+</form>
+<p class="mb-3"><a class="btn btn-outline-secondary btn-sm" href="{% url 'planner:reminder_list' %}">Сбросить фильтры</a></p>
+{% if date_error %}<p class="alert alert-warning">{{ date_error }}</p>{% endif %}
 <div class="row g-3">
 {% for entry in entries %}
   <div class="col-md-6">{% include 'planner/includes/reminder_card.html' %}</div>

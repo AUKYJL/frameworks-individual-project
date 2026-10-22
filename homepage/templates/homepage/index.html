@@ -6,6 +6,10 @@
   <h1 class="display-5 fw-bold mt-2">Сервис напоминаний</h1>
   <p class="lead mb-0">Напоминания, задачи, категории, пользователи и время в одном месте.</p>
 </section>
+<p class="mb-4 d-flex flex-wrap gap-2">
+  <a class="btn btn-primary" href="{% url 'planner:reminder_create' %}">+ Новое напоминание</a>
+  <a class="btn btn-outline-primary" href="{% url 'planner:task_create' %}">+ Новая задача</a>
+</p>
 <h2 class="h4 mb-3">Разделы проекта</h2>
 <div class="row g-3">
   {% for section in sections %}
@@ -22,5 +26,5 @@
     <p>Разделов пока нет.</p>
   {% endfor %}
 </div>
-<p class="text-muted mt-4">Данные загружаются из JSON. В этой практической работе доступен просмотр записей.</p>
+<p class="text-muted mt-4">Данные отображаются из SQLite через SQL-запросы. Консольная версия по-прежнему использует JSON.</p>
 {% endblock %}

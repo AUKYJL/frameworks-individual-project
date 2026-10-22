@@ -14,7 +14,6 @@ from django.template.loader import get_template  # noqa: E402
 from django.test import Client  # noqa: E402
 from django.urls import reverse  # noqa: E402
 
-from project_data import load_project_data  # noqa: E402
 
 
 @pytest.mark.parametrize("url,template", [
@@ -67,26 +66,42 @@ def test_navigation_uses_named_routes():
         assert f'href="{reverse(route)}"' in html
 
 
-def test_templates_escape_text_from_json():
-    data = load_project_data()
-    data.reminders[0].text = "<script>alert(123)</script>"
-    with patch("planner.views.load_project_data", return_value=data):
+def _setup_test_db(tmp_path):
+    from db.import_json import import_json
+    path = tmp_path / "website.sqlite"
+    import_json(path)
+    return path
+
+
+def test_templates_escape_text_from_sqlite(tmp_path):
+    from db.database import get_connection
+    path = _setup_test_db(tmp_path)
+    conn = get_connection(path)
+    with conn:
+        conn.execute("UPDATE reminders SET text = ? WHERE id = 1", (
+            "<script>alert(123)</script>",
+        ))
+    conn.close()
+    with patch("db.database.DB_PATH", path):
         html = Client().get("/reminders/").content.decode("utf-8")
     assert "&lt;script&gt;alert(123)&lt;/script&gt;" in html
     assert "<script>alert(123)</script>" not in html
 
 
-def test_empty_list_uses_empty_tag():
-    data = load_project_data()
-    data.reminders.clear()
-    with patch("planner.views.load_project_data", return_value=data):
+def test_empty_list_uses_empty_tag(tmp_path):
+    from db.database import get_connection
+    path = _setup_test_db(tmp_path)
+    conn = get_connection(path)
+    with conn:
+        conn.execute("DELETE FROM reminders")
+    conn.close()
+    with patch("db.database.DB_PATH", path):
         html = Client().get("/reminders/").content.decode("utf-8")
     assert "Напоминаний пока нет" in html
 
 
-def test_bad_json_returns_500_page():
-    with patch("homepage.views.load_project_data",
-               side_effect=ValueError("плохой JSON")):
+def test_bad_sqlite_returns_500_page(tmp_path):
+    with patch("db.database.DB_PATH", tmp_path / "empty.sqlite"):
         response = Client(raise_request_exception=False).get("/")
     assert response.status_code == 500
     assert "Ошибка чтения данных" in response.content.decode("utf-8")

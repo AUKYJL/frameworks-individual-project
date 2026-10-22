@@ -12,10 +12,15 @@
 <body>
   {% include 'includes/navigation.html' %}
   <main class="container main-content pb-5">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}" role="status">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
   <footer class="site-footer border-top py-3 text-center text-muted small">
-    © <span id="current-year">2026</span> Reminderly · ПР6 · Django Templates · Данные из JSON
+    © <span id="current-year">2026</span> Reminderly · ПР7 · Django Templates + SQLite CRUD
   </footer>
   <script src="{% static 'homepage/js/main.js' %}"></script>
 </body>

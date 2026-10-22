@@ -1,29 +1,31 @@
-"""Главная страница и обработка 404 (ПР6: Django Templates)."""
+"""Главная страница: счётчики SQLite через SQL (ПР7)."""
+
+import sqlite3
 
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-from project_data import load_project_data
+from db.database import fetch_one
 
 
 @require_GET
 def index(request):
     """Передаёт счётчики объектов главной странице, не собирая HTML."""
     try:
-        data = load_project_data()
-    except ValueError:
+        counts = fetch_one("overview_counts")
+    except (sqlite3.Error, OSError):
         return render(request, "errors/data_error.html", status=500)
 
     sections = [
-        {"name": "Напоминания", "count": len(data.reminders),
+        {"name": "Напоминания", "count": counts["reminder_count"],
          "route": "planner:reminder_list", "hint": "События и сроки"},
-        {"name": "Задачи", "count": len(data.tasks),
+        {"name": "Задачи", "count": counts["task_count"],
          "route": "planner:task_list", "hint": "Дела пользователей"},
-        {"name": "Категории", "count": len(data.categories),
+        {"name": "Категории", "count": counts["category_count"],
          "route": "planner:category_list", "hint": "Справочник категорий"},
-        {"name": "Пользователи", "count": len(data.users),
+        {"name": "Пользователи", "count": counts["user_count"],
          "route": "planner:user_list", "hint": "Авторы задач"},
-        {"name": "Время", "count": len(data.times),
+        {"name": "Время", "count": counts["time_count"],
          "route": "planner:time_list", "hint": "Плановые моменты"},
     ]
     return render(request, "homepage/index.html", {"sections": sections})

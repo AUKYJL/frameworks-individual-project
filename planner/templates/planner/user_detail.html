@@ -2,6 +2,10 @@
 {% block title %}{{ user.name }}{% endblock %}
 {% block content %}
 <h1 class="h2 mb-4">{{ user.name }}</h1>
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a class="btn btn-primary" href="{% url 'planner:user_edit' user.id %}">Редактировать</a>
+  <a class="btn btn-outline-danger" href="{% url 'planner:user_delete' user.id %}">Удалить</a>
+</div>
 <section class="card shadow-sm"><div class="card-body p-4">
   <dl class="row mb-0 gy-2"><dt class="col-sm-3">ID</dt><dd class="col-sm-9">{{ user.id }}</dd>
     <dt class="col-sm-3">Имя</dt><dd class="col-sm-9">{{ user.name }}</dd>
