@@ -1,4 +1,4 @@
-"""Настройки учебного Django-проекта ПР6."""
+"""Настройки учебного Django-проекта Reminderly (ПР9)."""
 
 import os
 from pathlib import Path
@@ -50,7 +50,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "reminder_site.wsgi.application"
 ASGI_APPLICATION = "reminder_site.asgi.application"
 
-# БД нужна только встроенным приложениям Django. Данные проекта — в JSON.
+# Основная БД предметных моделей и встроенных приложений Django.
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

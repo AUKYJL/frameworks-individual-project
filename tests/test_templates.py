@@ -14,6 +14,7 @@ from django.template.loader import get_template  # noqa: E402
 from django.test import Client  # noqa: E402
 from django.urls import reverse  # noqa: E402
 
+pytestmark = pytest.mark.usefixtures("orm_db")
 
 
 @pytest.mark.parametrize("url,template", [
@@ -66,42 +67,25 @@ def test_navigation_uses_named_routes():
         assert f'href="{reverse(route)}"' in html
 
 
-def _setup_test_db(tmp_path):
-    from db.import_json import import_json
-    path = tmp_path / "website.sqlite"
-    import_json(path)
-    return path
-
-
-def test_templates_escape_text_from_sqlite(tmp_path):
-    from db.database import get_connection
-    path = _setup_test_db(tmp_path)
-    conn = get_connection(path)
-    with conn:
-        conn.execute("UPDATE reminders SET text = ? WHERE id = 1", (
-            "<script>alert(123)</script>",
-        ))
-    conn.close()
-    with patch("db.database.DB_PATH", path):
-        html = Client().get("/reminders/").content.decode("utf-8")
+def test_templates_escape_text_from_sqlite():
+    from planner.models import Reminder
+    Reminder.objects.filter(pk=1).update(text="<script>alert(123)</script>")
+    html = Client().get("/reminders/").content.decode("utf-8")
     assert "&lt;script&gt;alert(123)&lt;/script&gt;" in html
     assert "<script>alert(123)</script>" not in html
 
 
-def test_empty_list_uses_empty_tag(tmp_path):
-    from db.database import get_connection
-    path = _setup_test_db(tmp_path)
-    conn = get_connection(path)
-    with conn:
-        conn.execute("DELETE FROM reminders")
-    conn.close()
-    with patch("db.database.DB_PATH", path):
-        html = Client().get("/reminders/").content.decode("utf-8")
+def test_empty_list_uses_empty_tag():
+    from planner.models import Reminder
+    Reminder.objects.all().delete()
+    html = Client().get("/reminders/").content.decode("utf-8")
     assert "Напоминаний пока нет" in html
 
 
-def test_bad_sqlite_returns_500_page(tmp_path):
-    with patch("db.database.DB_PATH", tmp_path / "empty.sqlite"):
+def test_bad_sqlite_returns_500_page():
+    from django.db import DatabaseError
+    with patch("homepage.views.Reminder.objects.count",
+               side_effect=DatabaseError("Unavailable")):
         response = Client(raise_request_exception=False).get("/")
     assert response.status_code == 500
     assert "Ошибка чтения данных" in response.content.decode("utf-8")

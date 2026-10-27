@@ -1,7 +1,6 @@
 """Демонстрация поисковых форм прямо на страницах списков."""
 
 import os
-from unittest.mock import patch
 
 import pytest
 
@@ -10,15 +9,11 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "reminder_site.settings")
 django.setup()
 
 from django.test import Client  # noqa: E402
-from db.import_json import import_json  # noqa: E402
 
 
 @pytest.fixture
-def web_db(tmp_path):
-    db_path = tmp_path / "web_search.sqlite"
-    import_json(db_path)
-    with patch("db.database.DB_PATH", db_path):
-        yield Client()
+def web_db(orm_db):
+    return Client()
 
 
 @pytest.mark.parametrize("path", [

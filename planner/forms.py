@@ -1,11 +1,8 @@
-"""Обычные Django Forms, без ModelForm и без Django ORM."""
-
-from datetime import datetime
+"""Обычные Django Forms с выборками и проверкой связей через ORM."""
 
 from django import forms
 
-from db.crud import get_item
-from db.database import fetch_all, get_connection
+from planner.models import Category, Reminder, Task, Time, User
 
 
 class PlainForm(forms.Form):
@@ -59,15 +56,9 @@ class TimeForm(PlainForm):
     def clean(self):
         values = super().clean()
         if self.item_id and values.get("moment"):
-            conn = get_connection()
-            try:
-                linked = conn.execute(
-                    "SELECT COUNT(*) FROM reminders "
-                    "WHERE time_id = ? AND remind_at <> ?",
-                    (self.item_id, as_iso(values["moment"])),
-                ).fetchone()[0]
-            finally:
-                conn.close()
+            linked = Reminder.objects.filter(time_id=self.item_id).exclude(
+                remind_at=values["moment"],
+            ).exists()
             if linked:
                 self.add_error(
                     "moment", "Время связано с напоминаниями. "
@@ -76,11 +67,10 @@ class TimeForm(PlainForm):
         return values
 
 
-def choices(query_name, label_column):
-    return [
-        (row["id"], str(row[label_column]))
-        for row in fetch_all(query_name)
-    ]
+def choices(model, label_column):
+    return list(model.objects.order_by(label_column, "id").values_list(
+        "id", label_column,
+    ))
 
 
 def choice_field(label, optional=False):
@@ -102,9 +92,9 @@ class TaskForm(PlainForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["user_id"].choices = choices("list_users", "name")
+        self.fields["user_id"].choices = choices(User, "name")
         self.fields["category_id"].choices = choices(
-            "list_categories", "name"
+            Category, "name"
         )
 
     def clean(self):
@@ -113,24 +103,17 @@ class TaskForm(PlainForm):
             name in values for name in ("user_id", "category_id")
         ):
             return values
-        conn = get_connection()
-        try:
-            related = conn.execute(
-                "SELECT user_id, category_id FROM reminders WHERE task_id = ?",
-                (self.item_id,),
-            ).fetchall()
-        finally:
-            conn.close()
+        related = Reminder.objects.filter(task_id=self.item_id)
         for reminder in related:
-            if reminder["category_id"] != values["category_id"]:
+            if reminder.category_id != values["category_id"]:
                 self.add_error(
                     "category_id", "Эта задача связана с напоминанием другой "
                     "категории. Сначала измените связанные напоминания.",
                 )
                 break
         for reminder in related:
-            if (reminder["user_id"] is not None
-                    and reminder["user_id"] != values["user_id"]):
+            if (reminder.user_id is not None
+                    and reminder.user_id != values["user_id"]):
                 self.add_error(
                     "user_id", "Эта задача связана с напоминанием другого "
                     "пользователя. Сначала измените связанные напоминания.",
@@ -153,16 +136,16 @@ class ReminderForm(PlainForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["category_id"].choices = choices(
-            "list_categories", "name"
+            Category, "name"
         )
         self.fields["user_id"].choices = [('', 'Без пользователя')] + choices(
-            "list_users", "name"
+            User, "name"
         )
         self.fields["task_id"].choices = [('', 'Без задачи')] + choices(
-            "list_tasks", "title"
+            Task, "title"
         )
         self.fields["time_id"].choices = [('', 'Без связанного времени')]
-        self.fields["time_id"].choices += choices("list_times", "label")
+        self.fields["time_id"].choices += choices(Time, "label")
         self.fields["time_id"].help_text = (
             "Необязательно. Если выбрано, его дата должна совпадать "
             "с датой напоминания."
@@ -175,34 +158,27 @@ class ReminderForm(PlainForm):
     def clean(self):
         values = super().clean()
         if values.get("task_id"):
-            task = get_item("tasks", values["task_id"])
+            task = Task.objects.filter(pk=values["task_id"]).first()
             if task and values.get("category_id") is not None:
-                if task["category_id"] != values["category_id"]:
+                if task.category_id != values["category_id"]:
                     self.add_error(
                         "category_id", "Категория должна совпадать "
                         "с категорией выбранной задачи.",
                     )
             if task and values.get("user_id") is not None:
-                if task["user_id"] != values["user_id"]:
+                if task.user_id != values["user_id"]:
                     self.add_error(
                         "user_id", "Пользователь должен совпадать "
                         "с пользователем выбранной задачи.",
                     )
         if values.get("time_id") and values.get("remind_at"):
-            time = get_item("times", values["time_id"])
-            if time and time["moment"] != as_iso(values["remind_at"]):
+            time = Time.objects.filter(pk=values["time_id"]).first()
+            if time and time.moment != values["remind_at"]:
                 self.add_error(
                     "time_id", "Момент выбранного времени должен совпадать "
                     "с датой и временем напоминания.",
                 )
         return values
-
-
-def as_iso(value):
-    """Даты в таблицах SQLite хранятся как YYYY-MM-DDTHH:MM."""
-    if isinstance(value, datetime):
-        return value.strftime(DATE_FORMAT)
-    return value
 
 
 FORMS = {
@@ -214,18 +190,9 @@ FORMS = {
 }
 
 
-def to_database(data):
-    """Нормализовать значения форм для sqlite3."""
-    return {
-        key: (int(value) if isinstance(value, bool) else as_iso(value))
-        for key, value in data.items()
-    }
-
-
 def to_initial(record):
-    """Подготовить исходные значения для формы редактирования."""
-    initial = dict(record)
-    for key in ("moment", "remind_at"):
-        if key in initial:
-            initial[key] = datetime.fromisoformat(initial[key])
-    return initial
+    """Сохранить FK-идентификаторы и datetime для обычных Django Forms."""
+    return {
+        field.attname: getattr(record, field.attname)
+        for field in record._meta.fields
+    }

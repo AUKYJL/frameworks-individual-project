@@ -1,7 +1,6 @@
 """ПР7: HTTP-страницы действительно получают данные из SQLite."""
 
 import os
-from unittest.mock import patch
 
 import pytest
 
@@ -10,16 +9,14 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "reminder_site.settings")
 django.setup()
 
 from django.test import Client  # noqa: E402
-from db.database import get_connection  # noqa: E402
-from db.import_json import import_json  # noqa: E402
+from django.db import DatabaseError  # noqa: E402
+from unittest.mock import patch  # noqa: E402
+from planner.models import Reminder  # noqa: E402
 
 
 @pytest.fixture
-def client_db(tmp_path):
-    path = tmp_path / "test.sqlite"
-    import_json(path)
-    with patch("db.database.DB_PATH", path):
-        yield Client(), path
+def client_db(orm_db):
+    return Client(), orm_db
 
 
 @pytest.mark.parametrize("url", [
@@ -34,11 +31,9 @@ def test_sqlite_pages_return_200(client_db, url):
 
 def test_changes_in_sqlite_are_visible_without_json_edits(client_db):
     client, path = client_db
-    conn = get_connection(path)
-    with conn:
-        conn.execute("UPDATE reminders SET text = ? WHERE id = 1", (
-            "Изменено непосредственно в SQLite",))
-    conn.close()
+    Reminder.objects.filter(pk=1).update(
+        text="Изменено непосредственно в SQLite",
+    )
     assert "Изменено непосредственно в SQLite" in (
         client.get("/reminders/").content.decode("utf-8")
     )
@@ -70,8 +65,9 @@ def test_statistics_have_aggregates(client_db):
 def test_missing_entity_and_missing_db(client_db):
     client, path = client_db
     assert client.get("/reminders/999999/").status_code == 404
-    path.unlink()
-    response = Client(raise_request_exception=False).get("/tasks/")
+    with patch("planner.views.Task.objects.select_related",
+               side_effect=DatabaseError("Unavailable")):
+        response = Client(raise_request_exception=False).get("/tasks/")
     assert response.status_code == 500
 
 

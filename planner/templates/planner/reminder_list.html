@@ -1,9 +1,18 @@
 {% extends 'base.html' %}
-{% block title %}Напоминания{% endblock %}
+{% block title %}Напоминания{% if page_obj.has_other_pages %}
+<nav class="mt-4" aria-label="Страницы напоминаний">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?{{ page_query }}&amp;page={{ page_obj.previous_page_number }}">Назад</a></li>{% endif %}
+    <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?{{ page_query }}&amp;page={{ page_obj.next_page_number }}">Далее</a></li>{% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}
 {% block content %}
 <h1>Напоминания</h1>
 <div class="mb-3"><a class="btn btn-primary" href="{% url 'planner:reminder_create' %}">+ Добавить</a></div>
-<p class="text-muted">Всего напоминаний: {{ entries|length }} · Данные из SQLite</p>
+<p class="text-muted">Всего напоминаний: {{ page_obj.paginator.count }} · Данные из SQLite</p>
 <form class="card card-body mb-3" method="get" action="{% url 'planner:reminder_list' %}">
   <div class="row g-3 align-items-end">
     {% include 'planner/includes/search_input.html' with placeholder="Текст напоминания" %}
@@ -26,6 +35,13 @@
         <option value="overdue" {% if status == 'overdue' %}selected{% endif %}>Просрочено</option>
       </select>
     </div>
+    <div class="col-md-3"><label class="form-label" for="reminder-sort">Сортировка</label>
+      <select class="form-select" id="reminder-sort" name="sort">
+        <option value="date" {% if sort == 'date' %}selected{% endif %}>По дате ↑</option>
+        <option value="-date" {% if sort == '-date' %}selected{% endif %}>По дате ↓</option>
+        <option value="category" {% if sort == 'category' %}selected{% endif %}>По категории</option>
+      </select>
+    </div>
     <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Найти</button></div>
   </div>
 </form>
@@ -38,4 +54,13 @@
   <p class="alert alert-info">Напоминаний пока нет.</p>
 {% endfor %}
 </div>
+{% if page_obj.has_other_pages %}
+<nav class="mt-4" aria-label="Страницы напоминаний">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?{{ page_query }}&amp;page={{ page_obj.previous_page_number }}">Назад</a></li>{% endif %}
+    <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?{{ page_query }}&amp;page={{ page_obj.next_page_number }}">Далее</a></li>{% endif %}
+  </ul>
+</nav>
+{% endif %}
 {% endblock %}

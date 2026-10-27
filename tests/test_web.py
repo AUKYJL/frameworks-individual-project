@@ -10,6 +10,8 @@ django.setup()
 
 from django.test import Client, override_settings  # noqa: E402
 
+pytestmark = pytest.mark.usefixtures("orm_db")
+
 
 @pytest.mark.parametrize("url,expected", [
     ("/", "Сервис напоминаний"),

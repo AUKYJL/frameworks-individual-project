@@ -1,7 +1,6 @@
 """HTTP-тесты: создание, редактирование, удаление, валидация, CSRF."""
 
 import os
-from unittest.mock import patch
 
 import pytest
 
@@ -11,16 +10,17 @@ django.setup()
 
 from django.test import Client  # noqa: E402
 from django.urls import reverse  # noqa: E402
-from db.crud import get_item  # noqa: E402
-from db.import_json import import_json  # noqa: E402
+from planner.crud_views import MODELS  # noqa: E402
+from django.utils import timezone  # noqa: E402
+
+
+def get_item(table, item_id):
+    return MODELS[table].objects.filter(pk=item_id).values().first()
 
 
 @pytest.fixture
-def web_db(tmp_path):
-    path = tmp_path / "http_crud.sqlite"
-    import_json(path)
-    with patch("db.database.DB_PATH", path):
-        yield Client(), path
+def web_db(orm_db):
+    return Client(), orm_db
 
 
 @pytest.mark.parametrize("part", [
@@ -142,7 +142,9 @@ def test_validation_and_relation_guards(web_db):
     assert client.post("/times/1/edit/", {
         "label": "Новое время", "moment": "2026-12-01T12:00",
     }).status_code == 200
-    assert get_item("times", 1)["moment"] == "2026-09-25T14:30"
+    assert timezone.localtime(get_item("times", 1)["moment"]).strftime(
+        "%Y-%m-%dT%H:%M"
+    ) == "2026-09-25T14:30"
 
 
 def test_csrf_required_for_writes(web_db):

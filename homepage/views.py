@@ -1,20 +1,23 @@
-"""Главная страница: счётчики SQLite через SQL (ПР7)."""
-
-import sqlite3
+"""Главная страница: счётчики предметных ORM-моделей."""
 
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
-from db.database import fetch_one
+from planner.models import Category, Reminder, Task, Time, User
+from planner.views import db_page
 
 
 @require_GET
+@db_page
 def index(request):
     """Передаёт счётчики объектов главной странице, не собирая HTML."""
-    try:
-        counts = fetch_one("overview_counts")
-    except (sqlite3.Error, OSError):
-        return render(request, "errors/data_error.html", status=500)
+    counts = {
+        "reminder_count": Reminder.objects.count(),
+        "task_count": Task.objects.count(),
+        "category_count": Category.objects.count(),
+        "user_count": User.objects.count(),
+        "time_count": Time.objects.count(),
+    }
 
     sections = [
         {"name": "Напоминания", "count": counts["reminder_count"],

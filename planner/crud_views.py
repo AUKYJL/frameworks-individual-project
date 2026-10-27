@@ -1,17 +1,22 @@
-"""CRUD страницы для пяти предметных сущностей на sqlite3 (без ORM)."""
-
-import sqlite3
+"""CRUD пяти предметных сущностей через Django ORM."""
 
 from django.contrib import messages
+from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError
 from django.http import Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
-from db.crud import (RelatedRecordsError, delete_item, get_item,
-                     insert_item, update_item)
-from planner.forms import FORMS, to_database, to_initial
+from planner.forms import FORMS, to_initial
+from planner.models import Category, Reminder, Task, Time, User
 from planner.views import db_page
+
+
+MODELS = {
+    "users": User, "categories": Category, "times": Time,
+    "tasks": Task, "reminders": Reminder,
+}
 
 
 ENTITY = {
@@ -55,8 +60,10 @@ def create_entity(request, entity):
     form = FORMS[entity](request.POST if request.method == "POST" else None)
     if request.method == "POST" and form.is_valid():
         try:
-            new_id = insert_item(entity, to_database(form.cleaned_data))
-        except sqlite3.IntegrityError as error:
+            with transaction.atomic():
+                record = MODELS[entity].objects.create(**form.cleaned_data)
+                new_id = record.pk
+        except IntegrityError as error:
             _validation_error(form, error)
         else:
             messages.success(request, f"{title} создан(а).")
@@ -71,17 +78,18 @@ def create_entity(request, entity):
 @db_page
 def edit_entity(request, entity, item_id):
     title, name = _config(entity)
-    record = get_item(entity, item_id)
-    if record is None:
-        raise Http404(f"{title} не найден(а)")
+    record = get_object_or_404(MODELS[entity], pk=item_id)
     form = FORMS[entity](
         request.POST if request.method == "POST" else None,
         initial=to_initial(record), item_id=item_id,
     )
     if request.method == "POST" and form.is_valid():
         try:
-            update_item(entity, item_id, to_database(form.cleaned_data))
-        except sqlite3.IntegrityError as error:
+            with transaction.atomic():
+                for field, value in form.cleaned_data.items():
+                    setattr(record, field, value)
+                record.save()
+        except IntegrityError as error:
             _validation_error(form, error)
         else:
             messages.success(request, f"{title} изменён(а).")
@@ -100,15 +108,15 @@ def edit_entity(request, entity, item_id):
 @db_page
 def delete_entity(request, entity, item_id):
     title, name = _config(entity)
-    record = get_item(entity, item_id)
-    if record is None:
-        raise Http404(f"{title} не найден(а)")
+    record = get_object_or_404(MODELS[entity], pk=item_id)
     error = ""
     if request.method == "POST":
         try:
-            delete_item(entity, item_id)
-        except RelatedRecordsError as exception:
-            error = str(exception)
+            with transaction.atomic():
+                record.delete()
+        except (ProtectedError, IntegrityError):
+            error = ("Нельзя удалить запись: на неё ссылаются другие записи. "
+                     "Сначала измените или удалите связанные записи.")
         else:
             messages.success(request, f"{title} удалён(а).")
             return redirect(f"planner:{name}_list")
