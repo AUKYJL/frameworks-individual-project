@@ -21,7 +21,7 @@ from planner.models import Category, Reminder, Task
 @pytest.mark.parametrize("status", Task.Status.values)
 def test_status_crud_and_generated_column(status):
     payload = {
-        "title": "Новая задача", "user_id": 1, "category_id": 1,
+        "title": "Новая задача", "user": 1, "category": 1,
         "status": status,
     }
     client = Client()
@@ -308,8 +308,8 @@ def test_reminder_values_query_and_single_pagination_preserve_filters():
     assert not ({e["reminder"]["id"] for e in rows} & {
         e["reminder"]["id"] for e in second.context["entries"]
     })
-    # Строки списка со связанными полями, два COUNT и варианты категорий.
-    assert len(queries) == 4
+    # Список, два COUNT, варианты категорий и валидация ModelChoiceField.
+    assert len(queries) == 5
     row_queries = [
         q["sql"] for q in queries if 'AS "category_name"' in q["sql"]
     ]
@@ -334,7 +334,7 @@ def test_shared_context_counts_and_category_links():
         assert response.context["service_name"] == "Reminderly"
         assert response.context["reminder_count"] == Reminder.objects.count()
         html = response.content.decode()
-        assert "ПР10" in html and "ПР7" not in html
+        assert "ПР11" in html and "ПР10" not in html and "ПР7" not in html
     category = Category.objects.get(pk=1)
     for url in ["/categories/", "/tasks/1/", "/reminders/1/"]:
         assert f'href="{category.get_absolute_url()}"' in client.get(

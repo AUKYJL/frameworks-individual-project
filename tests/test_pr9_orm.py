@@ -186,21 +186,23 @@ def test_naive_datetimes_are_supported():
     assert response.context["entries"][0]["status"]["label"] == "актуально"
 
 
-def test_edit_form_local_time_and_reminder_relation_validation():
+@patch("planner.forms.timezone.now",
+       return_value=timezone.make_aware(datetime(2026, 9, 1)))
+def test_edit_form_local_time_and_reminder_relation_validation(_now):
     html = Client().get("/times/1/edit/").content.decode()
     assert 'value="2026-09-25T14:30"' in html
     payload = {
-        "text": "Совпадает", "category_id": 1,
-        "remind_at": "2026-09-25T14:30", "user_id": 1,
-        "task_id": 1, "time_id": 1,
+        "text": "Совпадает", "category": 1,
+        "remind_at": "2026-09-25T14:30", "user": 1,
+        "task": 1, "time": 1,
     }
     assert ReminderForm(payload).is_valid()
     form = ReminderForm({**payload, "remind_at": "2026-09-25T14:31"})
     assert not form.is_valid()
-    assert "time_id" in form.errors
-    form = ReminderForm({**payload, "user_id": 2})
+    assert "time" in form.errors
+    form = ReminderForm({**payload, "user": 2})
     assert not form.is_valid()
-    assert "user_id" in form.errors
+    assert "user" in form.errors
 
 
 def test_statistics_keep_zero_groups_and_completion_counts():
@@ -227,7 +229,7 @@ def test_statistics_keep_zero_groups_and_completion_counts():
 
 
 def test_database_error_during_save_renders_error_page():
-    with patch("planner.crud_views.User.objects.create",
+    with patch("planner.forms.UserForm.save",
                side_effect=DatabaseError("Unavailable")):
         response = Client().post(
             "/users/new/", {"name": "Test", "email": "new@example.org"},

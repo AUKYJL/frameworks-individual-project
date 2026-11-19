@@ -20,6 +20,8 @@ urlpatterns = [
     path("times/<int:time_id>/", views.time_detail, name="time_detail"),
     path("tasks/", views.tasks, name="task_list"),
     path("tasks/<int:task_id>/", views.task_detail, name="task_detail"),
+    path("tasks/<int:task_id>/cancel/", crud_views.cancel_task,
+         name="task_cancel"),
     # CREATE / UPDATE / DELETE для всех пяти сущностей. Статические URL
     # new/ и <int:id>/edit/ не пересекаются с карточками объектов.
     path("users/new/", crud_views.create_entity,

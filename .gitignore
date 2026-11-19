@@ -30,6 +30,7 @@ pr7.docx
 
 # Local database backups
 /backups/
+/media/
 
 # Local databases, secrets and temporary files
 *.sqlite

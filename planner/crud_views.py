@@ -6,9 +6,9 @@ from django.db.models.deletion import ProtectedError
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 
-from planner.forms import FORMS, to_initial
+from planner.forms import FORMS
 from planner.models import Category, Reminder, Task, Time, User
 from planner.views import db_page
 
@@ -57,11 +57,14 @@ def _validation_error(form, error):
 @db_page
 def create_entity(request, entity):
     title, name = _config(entity)
-    form = FORMS[entity](request.POST if request.method == "POST" else None)
+    form = FORMS[entity](
+        request.POST if request.method == "POST" else None,
+        request.FILES if request.method == "POST" else None,
+    )
     if request.method == "POST" and form.is_valid():
         try:
             with transaction.atomic():
-                record = MODELS[entity].objects.create(**form.cleaned_data)
+                record = form.save()
         except IntegrityError as error:
             _validation_error(form, error)
         else:
@@ -84,14 +87,13 @@ def edit_entity(request, entity, item_id):
     record = get_object_or_404(MODELS[entity], pk=item_id)
     form = FORMS[entity](
         request.POST if request.method == "POST" else None,
-        initial=to_initial(record), item_id=item_id,
+        request.FILES if request.method == "POST" else None,
+        instance=record,
     )
     if request.method == "POST" and form.is_valid():
         try:
             with transaction.atomic():
-                for field, value in form.cleaned_data.items():
-                    setattr(record, field, value)
-                record.save()
+                form.save()
         except IntegrityError as error:
             _validation_error(form, error)
         else:
@@ -131,3 +133,12 @@ def delete_entity(request, entity, item_id):
                      reverse(f"planner:{name}_detail",
                              kwargs={f"{name}_id": item_id})),
     }, status=409 if error else 200)
+
+
+@require_POST
+@db_page
+def cancel_task(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    task.cancel()
+    messages.success(request, "Задача отменена.")
+    return redirect("planner:task_detail", task_id=task.pk)

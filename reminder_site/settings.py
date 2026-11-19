@@ -1,4 +1,4 @@
-"""Настройки учебного Django-проекта Reminderly (ПР10)."""
+"""Настройки учебного Django-проекта Reminderly (ПР11)."""
 
 import os
 import sys
@@ -65,6 +65,8 @@ TIME_ZONE = "Europe/Moscow"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Панель подключается только при локальной отладке, вне тестового запуска.

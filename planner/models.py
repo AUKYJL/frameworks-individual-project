@@ -5,6 +5,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 
+from planner.validators import validate_category_image
+
 
 class User(models.Model):
     class Meta:
@@ -25,6 +27,11 @@ class Category(models.Model):
 
     name = models.CharField("Название", max_length=100, unique=True)
     description = models.TextField("Описание", blank=True, default="")
+    image = models.ImageField(
+        "Изображение", upload_to="categories/", blank=True,
+        validators=[validate_category_image],
+        help_text="JPEG, PNG или WebP, до 5 МБ.",
+    )
 
     slug = models.SlugField(
         "Адрес категории", max_length=120, unique=True, blank=True,
@@ -161,6 +168,12 @@ class Task(models.Model):
         if errors:
             raise ValidationError(errors)
 
+    def cancel(self):
+        """Отменить активную задачу, сохранив запись и её связи."""
+        if self.status == self.Status.ACTIVE:
+            self.status = self.Status.CANCELLED
+            self.save(update_fields=["status"])
+
     def __str__(self):
         return self.title
 
@@ -196,13 +209,14 @@ class Reminder(models.Model):
         super().clean()
         errors = {}
         task = Task.objects.filter(pk=self.task_id).first()
-        if (task and (self.category_id or getattr(self, "category", None))
+        category = self.category_id or self._state.fields_cache.get("category")
+        if (task and category is not None
                 and task.category_id != self.category_id):
             errors["category"] = (
                 "Категория должна совпадать с категорией выбранной задачи."
             )
-        if (task and (self.user_id or self.user is not None)
-                and task.user_id != self.user_id):
+        user = self.user_id or self._state.fields_cache.get("user")
+        if task and user is not None and task.user_id != self.user_id:
             errors["user"] = (
                 "Пользователь должен совпадать "
                 "с пользователем выбранной задачи."

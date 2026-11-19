@@ -6,39 +6,40 @@
 <p class="text-muted">Всего задач: {{ entries|length }} · Данные из SQLite</p>
 <form class="card card-body mb-3" method="get" action="{% url 'planner:task_list' %}">
   <div class="row g-3 align-items-end">
-    {% include 'planner/includes/search_input.html' with placeholder="Название или описание" %}
-    <div class="col-md-2"><label class="form-label" for="task-status">Статус</label>
-      <select class="form-select" name="status" id="task-status">
-        <option value="all" {% if status == 'all' %}selected{% endif %}>Все</option>
-        <option value="open" {% if status == 'open' %}selected{% endif %}>В работе</option>
-        <option value="done" {% if status == 'done' %}selected{% endif %}>Выполненные</option>
-        <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Отменённые</option>
-      </select>
+    <div class="col-md-5">
+      <label class="form-label" for="{{ filter_form.q.id_for_label }}">{{ filter_form.q.label }}</label>
+      {{ filter_form.q }}
+      {% for error in filter_form.q.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.q.errors %}<div class="text-danger">Введено: {{ filter_form.q.value|default_if_none:"" }}</div>{% endif %}
     </div>
-    <div class="col-md-3"><label class="form-label" for="task-category">Категория</label>
-      <select class="form-select" name="category" id="task-category">
-        <option value="0">Все категории</option>
-        {% for category in categories %}
-        <option value="{{ category.id }}" {% if category.id == selected_category %}selected{% endif %}>{{ category.name }}</option>
-        {% endfor %}
-      </select>
+    <div class="col-md-2">
+      <label class="form-label" for="{{ filter_form.status.id_for_label }}">{{ filter_form.status.label }}</label>
+      {{ filter_form.status }}
+      {% for error in filter_form.status.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.status.errors %}<div class="text-danger">Введено: {{ filter_form.status.value|default_if_none:"" }}</div>{% endif %}
     </div>
-    <div class="col-md-3"><label class="form-label" for="task-user">Пользователь</label>
-      <select class="form-select" name="user" id="task-user">
-        <option value="0">Все пользователи</option>
-        {% for user in users %}
-        <option value="{{ user.id }}" {% if user.id == selected_user %}selected{% endif %}>{{ user.name }}</option>
-        {% endfor %}
-      </select>
+    <div class="col-md-3">
+      <label class="form-label" for="{{ filter_form.category.id_for_label }}">{{ filter_form.category.label }}</label>
+      {{ filter_form.category }}
+      {% for error in filter_form.category.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.category.errors %}<div class="text-danger">Введено: {{ filter_form.category.value|default_if_none:"" }}</div>{% endif %}
     </div>
-    <div class="col-md-2"><label class="form-label" for="task-day">Дата напоминания</label>
-      <input class="form-control" id="task-day" type="date" name="day" value="{{ day }}">
+    <div class="col-md-3">
+      <label class="form-label" for="{{ filter_form.user.id_for_label }}">{{ filter_form.user.label }}</label>
+      {{ filter_form.user }}
+      {% for error in filter_form.user.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.user.errors %}<div class="text-danger">Введено: {{ filter_form.user.value|default_if_none:"" }}</div>{% endif %}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label" for="{{ filter_form.day.id_for_label }}">{{ filter_form.day.label }}</label>
+      {{ filter_form.day }}
+      {% for error in filter_form.day.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.day.errors %}<div class="text-danger">Введено: {{ filter_form.day.value|default_if_none:"" }}</div>{% endif %}
     </div>
     <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Найти</button></div>
   </div>
 </form>
 <p class="mb-3"><a class="btn btn-outline-secondary btn-sm" href="{% url 'planner:task_list' %}">Сбросить фильтры</a></p>
-{% if date_error %}<p class="alert alert-warning">{{ date_error }}</p>{% endif %}
 <div class="row g-3">
 {% for entry in entries %}
   <div class="col-md-6">{% include 'planner/includes/task_card.html' %}</div>

@@ -12,9 +12,16 @@
 </form>
 <div class="list-group shadow-sm">
 {% for category in categories %}
-<a class="list-group-item list-group-item-action entity-item p-3" href="{{ category.get_absolute_url }}">
+<a class="list-group-item list-group-item-action entity-item p-3 d-flex align-items-center gap-3" href="{{ category.get_absolute_url }}">
+  {% if category.image %}
+  <img class="category-thumbnail rounded" src="{{ category.image.url }}" alt="Изображение категории {{ category.name }}" width="80" height="80" loading="lazy">
+  {% else %}
+  <span class="category-thumbnail rounded bg-body-secondary d-flex align-items-center justify-content-center text-muted small" aria-label="Нет изображения">Нет фото</span>
+  {% endif %}
+  <span>
   <span class="fw-semibold">{{ category.name|default:'Без названия'|capfirst }}</span>
   <span class="d-block text-muted small">{{ category.description|default:'Нет описания' }}</span>
+  </span>
 </a>
 {% empty %}<p class="list-group-item">Категорий пока нет.</p>{% endfor %}
 </div>

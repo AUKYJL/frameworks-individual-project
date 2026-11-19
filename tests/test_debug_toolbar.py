@@ -82,7 +82,8 @@ def test_reminder_sql_budget_does_not_grow_with_rows(size):
         with CaptureQueriesContext(connection) as captured:
             response = client.get("/reminders/", params)
         assert response.status_code == 200
-        assert len(captured) == 4
+        # ModelChoiceField дополнительно проверяет выбранную категорию.
+        assert len(captured) == (5 if "category" in params else 4)
         rows = response.context["entries"]
         assert len(rows) <= 5
         sql = [query["sql"] for query in captured]

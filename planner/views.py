@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
+from planner.forms import ReminderFilterForm, TaskFilterForm
 from planner.models import Category, Reminder, Task, Time, User
 from reminders import get_reminder_status
 
@@ -54,11 +55,6 @@ def _query(request):
     return request.GET.get("q", "").strip()[:100]
 
 
-def _selected_id(request, name):
-    raw = request.GET.get(name, "0")
-    return int(raw) if raw.isdecimal() and len(raw) <= 9 else 0
-
-
 def _date_filter(request, name):
     value = request.GET.get(name, "").strip()
     if not value:
@@ -75,12 +71,16 @@ def _date_filter(request, name):
 @require_GET
 @db_page
 def reminders(request):
-    query = _query(request)
-    category_id = _selected_id(request, "category")
-    before, date_error = _date_filter(request, "before")
-    status = request.GET.get("status", "all")
-    if status not in {"all", "upcoming", "current", "overdue"}:
-        status = "all"
+    form = ReminderFilterForm(request.GET)
+    # cleaned_data содержит корректные поля даже при ошибках других фильтров.
+    form.is_valid()
+    values = form.cleaned_data
+    query = values.get("q", "")
+    category = values.get("category")
+    category_id = category.pk if category else 0
+    before = values.get("before")
+    date_error = form.errors.get("before", "")
+    status = values.get("status") or "all"
     rows = Reminder.objects.all()
     if query:
         rows = rows.filter(
@@ -104,9 +104,7 @@ def reminders(request):
         "-date": ("-remind_at", "-id"),
         "category": ("category__name", "remind_at", "id"),
     }
-    sort = request.GET.get("sort", "date")
-    if sort not in sortings:
-        sort = "date"
+    sort = values.get("sort") or "date"
     rows = rows.annotate(
         category_name=F("category__name"), user_name=F("user__name"),
     ).values("id", "text", "remind_at", "category_name", "user_name")
@@ -117,7 +115,7 @@ def reminders(request):
     params.pop("page", None)
     return render(request, "planner/reminder_list.html", {
         "entries": _reminder_entries(page.object_list),
-        "categories": Category.objects.order_by("name", "id"),
+        "filter_form": form,
         "query": query, "selected_category": category_id,
         "before": before, "date_error": date_error, "status": status,
         "filtered": bool(query or category_id or before or status != "all"),
@@ -216,13 +214,18 @@ def time_detail(request, time_id):
 @require_GET
 @db_page
 def tasks(request):
-    query = _query(request)
-    status = request.GET.get("status", "all")
-    if status not in ("all", "done", "open", "cancelled"):
-        status = "all"
-    category_id = _selected_id(request, "category")
-    user_id = _selected_id(request, "user")
-    day, date_error = _date_filter(request, "day")
+    form = TaskFilterForm(request.GET)
+    # cleaned_data содержит корректные поля даже при ошибках других фильтров.
+    form.is_valid()
+    values = form.cleaned_data
+    query = values.get("q", "")
+    status = values.get("status") or "all"
+    category = values.get("category")
+    category_id = category.pk if category else 0
+    user = values.get("user")
+    user_id = user.pk if user else 0
+    day = values.get("day")
+    date_error = form.errors.get("day", "")
     rows = Task.objects.select_related("user", "category")
     if query:
         rows = rows.filter(
@@ -247,9 +250,8 @@ def tasks(request):
     return render(request, "planner/task_list.html", {
         "entries": entries, "status": status,
         "query": query, "selected_category": category_id,
-        "selected_user": user_id, "users": User.objects.order_by("name", "id"),
+        "selected_user": user_id, "filter_form": form,
         "day": day, "date_error": date_error,
-        "categories": Category.objects.order_by("name", "id"),
     })
 
 

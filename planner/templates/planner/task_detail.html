@@ -5,6 +5,12 @@
 <div class="d-flex flex-wrap gap-2 mb-3">
   <a class="btn btn-primary" href="{% url 'planner:task_edit' task.id %}">Редактировать</a>
   <a class="btn btn-outline-danger" href="{% url 'planner:task_delete' task.id %}">Удалить</a>
+  {% if task.status == 'ACTIVE' %}
+  <form method="post" action="{% url 'planner:task_cancel' task.id %}">
+    {% csrf_token %}
+    <button class="btn btn-warning" type="submit">Отменить задачу</button>
+  </form>
+  {% endif %}
 </div>
 <section class="card shadow-sm"><div class="card-body p-4">
   <dl class="row mb-0 gy-2">

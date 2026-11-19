@@ -40,10 +40,13 @@ def test_all_forms_have_buttons_and_csrf(web_db, part):
 
 def test_create_and_edit_all_forms(web_db):
     client, _ = web_db
+    moment = timezone.localtime(
+        timezone.now() + timezone.timedelta(days=2),
+    ).strftime("%Y-%m-%dT%H:%M")
     records = [
         ("users", "user", {"name": "Саша", "email": "sasha@example.org"}),
         ("categories", "category", {"name": "спорт", "description": "Фитнес"}),
-        ("times", "time", {"label": "Утро", "moment": "2026-11-15T08:00"}),
+        ("times", "time", {"label": "Утро", "moment": moment}),
     ]
     created = {}
     for table, singular, payload in records:
@@ -56,16 +59,16 @@ def test_create_and_edit_all_forms(web_db):
         assert get_item(table, item_id)
     task_data = {
         "title": "Тренировка", "description": "Утром",
-        "user_id": created["user"], "category_id": created["category"],
+        "user": created["user"], "category": created["category"],
         "status": "COMPLETED",
     }
     response = client.post("/tasks/new/", task_data)
     assert response.status_code == 302
     task_id = int(response.url.strip("/").split("/")[-1])
     reminder_data = {
-        "text": "Проснуться", "category_id": created["category"],
-        "remind_at": "2026-11-15T08:00", "user_id": created["user"],
-        "task_id": task_id, "time_id": created["time"],
+        "text": "Проснуться", "category": created["category"],
+        "remind_at": moment, "user": created["user"],
+        "task": task_id, "time": created["time"],
     }
     response = client.post("/reminders/new/", reminder_data)
     assert response.status_code == 302, response.content.decode("utf-8")
@@ -86,7 +89,7 @@ def test_create_and_edit_all_forms(web_db):
         ),
         (
             "times", created["time"],
-            {"label": "Раннее утро", "moment": "2026-11-15T08:00"},
+            {"label": "Раннее утро", "moment": moment},
             "label", "Раннее утро",
         ),
         (
@@ -127,8 +130,8 @@ def test_validation_and_relation_guards(web_db):
     assert duplicate.status_code == 200
     assert "уже существует" in duplicate.content.decode("utf-8")
     mismatched = client.post("/reminders/new/", {
-        "text": "Ошибка", "category_id": 3, "remind_at": "2026-11-15T09:00",
-        "user_id": 2, "task_id": 1, "time_id": 1,
+        "text": "Ошибка", "category": 3, "remind_at": "2026-11-15T09:00",
+        "user": 2, "task": 1, "time": 1,
     })
     assert mismatched.status_code == 200
     assert "должна совпадать" in mismatched.content.decode("utf-8")
@@ -137,8 +140,8 @@ def test_validation_and_relation_guards(web_db):
     assert client.get("/users/99999/edit/").status_code == 404
     assert client.get("/users/99999/delete/").status_code == 404
     assert client.post("/tasks/1/edit/", {
-        "title": "Новое", "description": "", "user_id": 1,
-        "category_id": 3,
+        "title": "Новое", "description": "", "user": 1,
+        "category": 3, "status": "ACTIVE",
     }).status_code == 200
     assert get_item("tasks", 1)["category_id"] == 1
     assert client.post("/times/1/edit/", {

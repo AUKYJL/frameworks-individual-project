@@ -6,38 +6,40 @@
 <p class="text-muted">Всего напоминаний: {{ page_obj.paginator.count }} · Данные из SQLite</p>
 <form class="card card-body mb-3" method="get" action="{% url 'planner:reminder_list' %}">
   <div class="row g-3 align-items-end">
-    {% include 'planner/includes/search_input.html' with placeholder="Текст, категория или имя пользователя" %}
-    <div class="col-md-3"><label class="form-label" for="reminder-category">Категория</label>
-      <select class="form-select" name="category" id="reminder-category">
-        <option value="0">Все категории</option>
-        {% for category in categories %}
-        <option value="{{ category.id }}" {% if category.id == selected_category %}selected{% endif %}>{{ category.name }}</option>
-        {% endfor %}
-      </select>
+    <div class="col-md-5">
+      <label class="form-label" for="{{ filter_form.q.id_for_label }}">{{ filter_form.q.label }}</label>
+      {{ filter_form.q }}
+      {% for error in filter_form.q.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.q.errors %}<div class="text-danger">Введено: {{ filter_form.q.value|default_if_none:"" }}</div>{% endif %}
     </div>
-    <div class="col-md-2"><label class="form-label" for="reminder-before">До даты</label>
-      <input class="form-control" id="reminder-before" type="date" name="before" value="{{ before }}">
+    <div class="col-md-3">
+      <label class="form-label" for="{{ filter_form.category.id_for_label }}">{{ filter_form.category.label }}</label>
+      {{ filter_form.category }}
+      {% for error in filter_form.category.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.category.errors %}<div class="text-danger">Введено: {{ filter_form.category.value|default_if_none:"" }}</div>{% endif %}
     </div>
-    <div class="col-md-3"><label class="form-label" for="reminder-status">Статус</label>
-      <select class="form-select" id="reminder-status" name="status">
-        <option value="all" {% if status == 'all' %}selected{% endif %}>Любой</option>
-        <option value="upcoming" {% if status == 'upcoming' %}selected{% endif %}>Ещё не наступило</option>
-        <option value="current" {% if status == 'current' %}selected{% endif %}>Актуально</option>
-        <option value="overdue" {% if status == 'overdue' %}selected{% endif %}>Просрочено</option>
-      </select>
+    <div class="col-md-2">
+      <label class="form-label" for="{{ filter_form.before.id_for_label }}">{{ filter_form.before.label }}</label>
+      {{ filter_form.before }}
+      {% for error in filter_form.before.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.before.errors %}<div class="text-danger">Введено: {{ filter_form.before.value|default_if_none:"" }}</div>{% endif %}
     </div>
-    <div class="col-md-3"><label class="form-label" for="reminder-sort">Сортировка</label>
-      <select class="form-select" id="reminder-sort" name="sort">
-        <option value="date" {% if sort == 'date' %}selected{% endif %}>По дате ↑</option>
-        <option value="-date" {% if sort == '-date' %}selected{% endif %}>По дате ↓</option>
-        <option value="category" {% if sort == 'category' %}selected{% endif %}>По категории</option>
-      </select>
+    <div class="col-md-3">
+      <label class="form-label" for="{{ filter_form.status.id_for_label }}">{{ filter_form.status.label }}</label>
+      {{ filter_form.status }}
+      {% for error in filter_form.status.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.status.errors %}<div class="text-danger">Введено: {{ filter_form.status.value|default_if_none:"" }}</div>{% endif %}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="{{ filter_form.sort.id_for_label }}">{{ filter_form.sort.label }}</label>
+      {{ filter_form.sort }}
+      {% for error in filter_form.sort.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      {% if filter_form.sort.errors %}<div class="text-danger">Введено: {{ filter_form.sort.value|default_if_none:"" }}</div>{% endif %}
     </div>
     <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Найти</button></div>
   </div>
 </form>
 <p class="mb-3"><a class="btn btn-outline-secondary btn-sm" href="{% url 'planner:reminder_list' %}">Сбросить фильтры</a></p>
-{% if date_error %}<p class="alert alert-warning">{{ date_error }}</p>{% endif %}
 <div class="row g-3">
 {% for entry in entries %}
   <div class="col-md-6">{% include 'planner/includes/reminder_card.html' %}</div>
