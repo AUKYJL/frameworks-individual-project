@@ -62,12 +62,15 @@ def create_entity(request, entity):
         try:
             with transaction.atomic():
                 record = MODELS[entity].objects.create(**form.cleaned_data)
-                new_id = record.pk
         except IntegrityError as error:
             _validation_error(form, error)
         else:
             messages.success(request, f"{title} создан(а).")
-            return redirect(f"planner:{name}_detail", **{f"{name}_id": new_id})
+            return redirect(
+                record.get_absolute_url() if entity == "categories" else
+                reverse(f"planner:{name}_detail",
+                        kwargs={f"{name}_id": record.pk})
+            )
     return render(request, "planner/entity_form.html", {
         "form": form, "entity": title, "action_name": "Создание",
         "back_url": _urls(entity)["list"],
@@ -94,13 +97,15 @@ def edit_entity(request, entity, item_id):
         else:
             messages.success(request, f"{title} изменён(а).")
             return redirect(
-                f"planner:{name}_detail", **{f"{name}_id": item_id}
+                record.get_absolute_url() if entity == "categories" else
+                reverse(f"planner:{name}_detail",
+                        kwargs={f"{name}_id": item_id})
             )
     return render(request, "planner/entity_form.html", {
         "form": form, "entity": title, "action_name": "Редактирование",
-        "back_url": reverse(
-            f"planner:{name}_detail", kwargs={f"{name}_id": item_id}
-        ),
+        "back_url": (record.get_absolute_url() if entity == "categories" else
+                     reverse(f"planner:{name}_detail",
+                             kwargs={f"{name}_id": item_id})),
     })
 
 
@@ -122,7 +127,7 @@ def delete_entity(request, entity, item_id):
             return redirect(f"planner:{name}_list")
     return render(request, "planner/entity_confirm_delete.html", {
         "entity": title, "record": record, "error": error,
-        "back_url": reverse(
-            f"planner:{name}_detail", kwargs={f"{name}_id": item_id}
-        ),
+        "back_url": (record.get_absolute_url() if entity == "categories" else
+                     reverse(f"planner:{name}_detail",
+                             kwargs={f"{name}_id": item_id})),
     }, status=409 if error else 200)

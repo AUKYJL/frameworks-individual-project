@@ -65,8 +65,10 @@ class Command(BaseCommand):
                                     raise CommandError(
                                         "Некорректный статус задачи"
                                     )
-                                values["is_completed"] = bool(
-                                    values["is_completed"]
+                                values["status"] = (
+                                    Task.Status.COMPLETED
+                                    if values.pop("is_completed")
+                                    else Task.Status.ACTIVE
                                 )
                             existing = model.objects.filter(
                                 pk=values["id"],

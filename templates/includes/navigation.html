@@ -2,8 +2,8 @@
 <header class="site-header bg-white border-bottom mb-4">
   <nav class="container navbar navbar-expand-lg flex-wrap gap-2" aria-label="Главная навигация">
     <a class="navbar-brand brand" href="{% url 'homepage:index' %}">
-      <img src="{% static 'homepage/img/logo.svg' %}" alt="Логотип Reminderly" width="36" height="36">
-      Reminderly
+      <img src="{% static 'homepage/img/logo.svg' %}" alt="Логотип {{ service_name }}" width="36" height="36">
+      {{ service_name }}
     </a>
     <div class="d-flex flex-wrap gap-1 ms-lg-auto">
       <a class="nav-link {% if request.resolver_match.namespace == 'homepage' %}active{% endif %}"
@@ -12,7 +12,7 @@
          href="{% url 'planner:reminder_list' %}">Напоминания</a>
       <a class="nav-link {% if request.resolver_match.url_name == 'task_list' or request.resolver_match.url_name == 'task_detail' %}active{% endif %}"
          href="{% url 'planner:task_list' %}">Задачи</a>
-      <a class="nav-link {% if request.resolver_match.url_name == 'category_list' or request.resolver_match.url_name == 'category_detail' %}active{% endif %}"
+      <a class="nav-link {% if request.resolver_match.url_name == 'category_list' or request.resolver_match.url_name == 'category_detail' or request.resolver_match.url_name == 'category_detail_slug' %}active{% endif %}"
          href="{% url 'planner:category_list' %}">Категории</a>
       <a class="nav-link {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_detail' %}active{% endif %}"
          href="{% url 'planner:user_list' %}">Пользователи</a>

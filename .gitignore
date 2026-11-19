@@ -27,3 +27,24 @@ pr3.docx
 pr5.docx
 pr6.docx
 pr7.docx
+
+# Local database backups
+/backups/
+
+# Local databases, secrets and temporary files
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite3-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+*.bak
+*.backup
+.env
+.env.*
+!.env.example
+/tmp/
+*.tmp

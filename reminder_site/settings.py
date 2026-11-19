@@ -1,6 +1,7 @@
-"""Настройки учебного Django-проекта Reminderly (ПР9)."""
+"""Настройки учебного Django-проекта Reminderly (ПР10)."""
 
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +42,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
+                "planner.context_processors.service_context",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
@@ -64,3 +66,11 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Панель подключается только при локальной отладке, вне тестового запуска.
+TESTING = "test" in sys.argv or "pytest" in sys.modules
+DEBUG_TOOLBAR_ENABLED = DEBUG and not TESTING
+INTERNAL_IPS = ["127.0.0.1", "::1"]
+if DEBUG_TOOLBAR_ENABLED:
+    INSTALLED_APPS += ["debug_toolbar"]
+    MIDDLEWARE.insert(1, "debug_toolbar.middleware.DebugToolbarMiddleware")

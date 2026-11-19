@@ -12,6 +12,7 @@
         <option value="all" {% if status == 'all' %}selected{% endif %}>Все</option>
         <option value="open" {% if status == 'open' %}selected{% endif %}>В работе</option>
         <option value="done" {% if status == 'done' %}selected{% endif %}>Выполненные</option>
+        <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Отменённые</option>
       </select>
     </div>
     <div class="col-md-3"><label class="form-label" for="task-category">Категория</label>
@@ -22,10 +23,22 @@
         {% endfor %}
       </select>
     </div>
+    <div class="col-md-3"><label class="form-label" for="task-user">Пользователь</label>
+      <select class="form-select" name="user" id="task-user">
+        <option value="0">Все пользователи</option>
+        {% for user in users %}
+        <option value="{{ user.id }}" {% if user.id == selected_user %}selected{% endif %}>{{ user.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label" for="task-day">Дата напоминания</label>
+      <input class="form-control" id="task-day" type="date" name="day" value="{{ day }}">
+    </div>
     <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Найти</button></div>
   </div>
 </form>
 <p class="mb-3"><a class="btn btn-outline-secondary btn-sm" href="{% url 'planner:task_list' %}">Сбросить фильтры</a></p>
+{% if date_error %}<p class="alert alert-warning">{{ date_error }}</p>{% endif %}
 <div class="row g-3">
 {% for entry in entries %}
   <div class="col-md-6">{% include 'planner/includes/task_card.html' %}</div>

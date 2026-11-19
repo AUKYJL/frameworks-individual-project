@@ -9,7 +9,7 @@
 <section class="card shadow-sm"><div class="card-body p-4">
   <dl class="row mb-0 gy-2">
     <dt class="col-sm-3">Текст</dt><dd class="col-sm-9 value">{{ reminder.text }}</dd>
-    <dt class="col-sm-3">Категория</dt><dd class="col-sm-9"><a href="{% url 'planner:category_detail' category.id %}">{{ category.name }}</a></dd>
+    <dt class="col-sm-3">Категория</dt><dd class="col-sm-9"><a href="{{ category.get_absolute_url }}">{{ category.name }}</a></dd>
     <dt class="col-sm-3">Дата и время</dt><dd class="col-sm-9">{{ reminder.remind_at|date:'d.m.Y H:i' }}</dd>
     <dt class="col-sm-3">Статус</dt><dd class="col-sm-9">{% include 'planner/includes/status_badge.html' %}</dd>
     {% if user %}<dt class="col-sm-3">Пользователь</dt><dd class="col-sm-9"><a href="{% url 'planner:user_detail' user.id %}">{{ user.name }}</a></dd>{% endif %}

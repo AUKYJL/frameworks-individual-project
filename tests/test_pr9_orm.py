@@ -112,20 +112,20 @@ def test_sorting_pagination_preserve_all_parameters():
         context = response.context
         assert context["page_obj"].paginator.count == 12
         assert len(context["entries"]) == 5
-        assert context["entries"][0]["reminder"].text == "Проверка 11"
+        assert context["entries"][0]["reminder"]["text"] == "Проверка 11"
         assert parse_qs(context["page_query"]) == {
             key: [value] for key, value in params.items()
         }
         assert "page=2" in response.content.decode()
         second = Client().get("/reminders/", {**params, "page": 2})
-        first_ids = {e["reminder"].pk for e in context["entries"]}
-        second_ids = {e["reminder"].pk for e in second.context["entries"]}
+        first_ids = {e["reminder"]["id"] for e in context["entries"]}
+        second_ids = {e["reminder"]["id"] for e in second.context["entries"]}
         assert not first_ids & second_ids
         last = Client().get("/reminders/", {**params, "page": 9999})
         assert last.context["page_obj"].number == 3
         assert len(last.context["entries"]) == 2
     by_category = Client().get("/reminders/?sort=category")
-    names = [e["reminder"].category.name
+    names = [e["reminder"]["category_name"]
              for e in by_category.context["entries"]]
     assert names == sorted(names)
 
@@ -167,12 +167,12 @@ def test_status_matches_minute_filters_and_local_date():
             response = Client().get("/reminders/", {"status": status})
             entries = response.context["entries"]
             assert len(entries) == 1
-            assert entries[0]["reminder"].text == status
+            assert entries[0]["reminder"]["text"] == status
             assert entries[0]["status"]["label"] == label
         response = Client().get("/reminders/?before=2026-10-27")
-        assert [e["reminder"].text for e in response.context["entries"]] == [
-            "overdue",
-        ]
+        assert [
+            e["reminder"]["text"] for e in response.context["entries"]
+        ] == ["overdue"]
 
 
 @override_settings(USE_TZ=False)
@@ -210,6 +210,7 @@ def test_statistics_keep_zero_groups_and_completion_counts():
     ctx = response.context
     assert ctx["totals"] == {
         "total_tasks": 3, "completed_tasks": 1, "open_tasks": 2,
+        "cancelled_tasks": 0,
     }
     assert ctx["reminder_count"] == 2
     by_category = {row.name: (row.task_count, row.done_count)

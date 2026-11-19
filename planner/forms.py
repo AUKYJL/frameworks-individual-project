@@ -1,6 +1,7 @@
 """Обычные Django Forms с выборками и проверкой связей через ORM."""
 
 from django import forms
+from django.core.exceptions import ValidationError
 
 from planner.models import Category, Reminder, Task, Time, User
 
@@ -18,6 +19,18 @@ class PlainForm(forms.Form):
                 field.widget.attrs["class"] = "form-select"
             else:
                 field.widget.attrs["class"] = "form-control"
+
+    def clean_model(self, model):
+        """Применить общие правила модели к обычной форме с FK-ID."""
+        values = self.cleaned_data
+        instance = model(pk=self.item_id, **values)
+        try:
+            instance.clean()
+        except ValidationError as error:
+            for name, messages in error.message_dict.items():
+                field = model._meta.get_field(name).attname
+                self.add_error(field, messages)
+        return values
 
 
 class UserForm(PlainForm):
@@ -54,17 +67,8 @@ class TimeForm(PlainForm):
     moment = date_field("Дата и время")
 
     def clean(self):
-        values = super().clean()
-        if self.item_id and values.get("moment"):
-            linked = Reminder.objects.filter(time_id=self.item_id).exclude(
-                remind_at=values["moment"],
-            ).exists()
-            if linked:
-                self.add_error(
-                    "moment", "Время связано с напоминаниями. "
-                    "Сначала измените время в связанных напоминаниях.",
-                )
-        return values
+        super().clean()
+        return self.clean_model(Time)
 
 
 def choices(model, label_column):
@@ -88,7 +92,10 @@ class TaskForm(PlainForm):
     )
     user_id = choice_field("Пользователь")
     category_id = choice_field("Категория")
-    is_completed = forms.BooleanField(label="Выполнена", required=False)
+    status = forms.ChoiceField(
+        label="Статус", choices=Task.Status.choices,
+        initial=Task.Status.ACTIVE,
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -98,28 +105,8 @@ class TaskForm(PlainForm):
         )
 
     def clean(self):
-        values = super().clean()
-        if not self.item_id or not all(
-            name in values for name in ("user_id", "category_id")
-        ):
-            return values
-        related = Reminder.objects.filter(task_id=self.item_id)
-        for reminder in related:
-            if reminder.category_id != values["category_id"]:
-                self.add_error(
-                    "category_id", "Эта задача связана с напоминанием другой "
-                    "категории. Сначала измените связанные напоминания.",
-                )
-                break
-        for reminder in related:
-            if (reminder.user_id is not None
-                    and reminder.user_id != values["user_id"]):
-                self.add_error(
-                    "user_id", "Эта задача связана с напоминанием другого "
-                    "пользователя. Сначала измените связанные напоминания.",
-                )
-                break
-        return values
+        super().clean()
+        return self.clean_model(Task)
 
 
 class ReminderForm(PlainForm):
@@ -156,29 +143,8 @@ class ReminderForm(PlainForm):
         )
 
     def clean(self):
-        values = super().clean()
-        if values.get("task_id"):
-            task = Task.objects.filter(pk=values["task_id"]).first()
-            if task and values.get("category_id") is not None:
-                if task.category_id != values["category_id"]:
-                    self.add_error(
-                        "category_id", "Категория должна совпадать "
-                        "с категорией выбранной задачи.",
-                    )
-            if task and values.get("user_id") is not None:
-                if task.user_id != values["user_id"]:
-                    self.add_error(
-                        "user_id", "Пользователь должен совпадать "
-                        "с пользователем выбранной задачи.",
-                    )
-        if values.get("time_id") and values.get("remind_at"):
-            time = Time.objects.filter(pk=values["time_id"]).first()
-            if time and time.moment != values["remind_at"]:
-                self.add_error(
-                    "time_id", "Момент выбранного времени должен совпадать "
-                    "с датой и временем напоминания.",
-                )
-        return values
+        super().clean()
+        return self.clean_model(Reminder)
 
 
 FORMS = {
@@ -194,5 +160,5 @@ def to_initial(record):
     """Сохранить FK-идентификаторы и datetime для обычных Django Forms."""
     return {
         field.attname: getattr(record, field.attname)
-        for field in record._meta.fields
+        for field in record._meta.fields if not field.generated
     }

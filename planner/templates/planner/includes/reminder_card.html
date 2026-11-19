@@ -5,7 +5,7 @@
       {% include 'planner/includes/status_badge.html' with status=entry.status %}
     </div>
     <h2 class="h5 value">{{ entry.reminder.text|default:'Без текста' }}</h2>
-    <p class="text-muted small mb-3">{{ entry.reminder.category|capfirst }} · {{ entry.reminder.remind_at|date:'d.m.Y H:i' }}</p>
+    <p class="text-muted small mb-3">{{ entry.reminder.category_name|capfirst }} · {{ entry.reminder.remind_at|date:'d.m.Y H:i' }}</p>
     <a class="btn btn-outline-primary btn-sm mt-auto align-self-start" href="{% url 'planner:reminder_detail' entry.reminder.id %}">Подробнее</a>
   </div>
 </article>

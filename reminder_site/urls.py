@@ -1,5 +1,6 @@
 """Маршрутизация: основной URL-файл распределяет запросы по приложениям."""
 
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
@@ -10,3 +11,6 @@ urlpatterns = [
 ]
 
 handler404 = "homepage.views.page_not_found"
+
+if settings.DEBUG_TOOLBAR_ENABLED:
+    urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]

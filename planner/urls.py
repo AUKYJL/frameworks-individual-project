@@ -52,4 +52,6 @@ urlpatterns = [
          {"entity": "reminders"}, name="reminder_edit"),
     path("reminders/<int:item_id>/delete/", crud_views.delete_entity,
          {"entity": "reminders"}, name="reminder_delete"),
+    path("categories/<slug:slug>/", views.category_detail,
+         name="category_detail_slug"),
 ]

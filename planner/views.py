@@ -1,4 +1,4 @@
-"""Списки, поиск, связи и статистика через Django ORM (ПР9)."""
+"""Списки, поиск, связи и статистика через Django ORM (ПР10)."""
 
 from datetime import datetime, timedelta
 from functools import wraps
@@ -6,7 +6,7 @@ from functools import wraps
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db import DatabaseError
-from django.db.models import Count, IntegerField, Q, Sum
+from django.db.models import Count, F, IntegerField, Q, Sum
 from django.db.models.functions import Cast
 from django.http import Http404
 from django.shortcuts import get_object_or_404, render
@@ -35,8 +35,7 @@ def _now():
     return timezone.localtime(now) if settings.USE_TZ else now
 
 
-def _status(reminder, now):
-    moment = reminder.remind_at
+def _status(moment, now):
     if settings.USE_TZ:
         moment = timezone.localtime(moment)
     label = get_reminder_status(moment, now)
@@ -46,7 +45,7 @@ def _status(reminder, now):
 def _reminder_entries(rows):
     now = _now()
     return [
-        {"reminder": record, "status": _status(record, now)}
+        {"reminder": record, "status": _status(record["remind_at"], now)}
         for record in rows
     ]
 
@@ -82,9 +81,12 @@ def reminders(request):
     status = request.GET.get("status", "all")
     if status not in {"all", "upcoming", "current", "overdue"}:
         status = "all"
-    rows = Reminder.objects.select_related("category", "user", "task", "time")
+    rows = Reminder.objects.all()
     if query:
-        rows = rows.filter(text__icontains=query)
+        rows = rows.filter(
+            Q(text__icontains=query) | Q(category__name__icontains=query)
+            | Q(user__name__icontains=query)
+        )
     if category_id:
         rows = rows.filter(category__id=category_id)
     if before:
@@ -105,6 +107,9 @@ def reminders(request):
     sort = request.GET.get("sort", "date")
     if sort not in sortings:
         sort = "date"
+    rows = rows.annotate(
+        category_name=F("category__name"), user_name=F("user__name"),
+    ).values("id", "text", "remind_at", "category_name", "user_name")
     page = Paginator(rows.order_by(*sortings[sort]), 5).get_page(
         request.GET.get("page")
     )
@@ -130,7 +135,7 @@ def reminder_detail(request, reminder_id):
     return render(request, "planner/reminder_detail.html", {
         "reminder": reminder, "category": reminder.category,
         "user": reminder.user, "task": reminder.task, "time": reminder.time,
-        "status": _status(reminder, _now()),
+        "status": _status(reminder.remind_at, _now()),
     })
 
 
@@ -174,8 +179,9 @@ def categories(request):
 
 @require_GET
 @db_page
-def category_detail(request, category_id):
-    category = get_object_or_404(Category, pk=category_id)
+def category_detail(request, category_id=None, slug=None):
+    lookup = {"slug": slug} if slug is not None else {"pk": category_id}
+    category = get_object_or_404(Category, **lookup)
     return render(request, "planner/category_detail.html", {
         "category": category, "tasks": category.tasks.order_by("id"),
         "reminders": category.reminders.order_by("remind_at", "id"),
@@ -212,20 +218,28 @@ def time_detail(request, time_id):
 def tasks(request):
     query = _query(request)
     status = request.GET.get("status", "all")
-    if status not in ("all", "done", "open"):
+    if status not in ("all", "done", "open", "cancelled"):
         status = "all"
     category_id = _selected_id(request, "category")
+    user_id = _selected_id(request, "user")
+    day, date_error = _date_filter(request, "day")
     rows = Task.objects.select_related("user", "category")
     if query:
         rows = rows.filter(
             Q(title__icontains=query) | Q(description__icontains=query)
         )
     if status == "done":
-        rows = rows.filter(is_completed=True)
+        rows = rows.completed()
     elif status == "open":
-        rows = rows.exclude(is_completed=True)
+        rows = rows.active()
+    elif status == "cancelled":
+        rows = rows.cancelled()
     if category_id:
         rows = rows.filter(category__id=category_id)
+    if user_id:
+        rows = rows.filter(user_id=user_id)
+    if day:
+        rows = rows.for_date(day)
     entries = [
         {"task": row, "user": row.user, "category": row.category}
         for row in rows.order_by("id")
@@ -233,6 +247,8 @@ def tasks(request):
     return render(request, "planner/task_list.html", {
         "entries": entries, "status": status,
         "query": query, "selected_category": category_id,
+        "selected_user": user_id, "users": User.objects.order_by("name", "id"),
+        "day": day, "date_error": date_error,
         "categories": Category.objects.order_by("name", "id"),
     })
 
@@ -264,15 +280,16 @@ def statistics(request):
     min_tasks = max(1, min(min_tasks, 100))
     totals = Task.objects.aggregate(
         total_tasks=Count("id"),
-        completed_tasks=Sum(Cast("is_completed", IntegerField()), default=0),
+        open_tasks=Count("id", filter=Q(status=Task.Status.ACTIVE)),
+        cancelled_tasks=Count("id", filter=Q(status=Task.Status.CANCELLED)),
+        completed_tasks=Count("id", filter=Q(status=Task.Status.COMPLETED)),
     )
-    totals["open_tasks"] = totals["total_tasks"] - totals["completed_tasks"]
     by_user = User.objects.annotate(
         task_count=Count("tasks"),
         done_count=Sum(Cast("tasks__is_completed", IntegerField()), default=0),
     ).order_by("-task_count", "name", "id")
     return render(request, "planner/statistics.html", {
-        "totals": totals, "reminder_count": Reminder.objects.count(),
+        "totals": totals,
         "by_category": Category.objects.annotate(
             task_count=Count("tasks"),
             done_count=Sum(

@@ -11,7 +11,7 @@
     <dt class="col-sm-3">ID</dt><dd class="col-sm-9">{{ task.id }}</dd>
     <dt class="col-sm-3">Описание</dt><dd class="col-sm-9 value">{{ task.description|default:'Без описания' }}</dd>
     <dt class="col-sm-3">Пользователь</dt><dd class="col-sm-9"><a href="{% url 'planner:user_detail' user.id %}">{{ user.name }}</a></dd>
-    <dt class="col-sm-3">Категория</dt><dd class="col-sm-9"><a href="{% url 'planner:category_detail' category.id %}">{{ category.name }}</a></dd>
+    <dt class="col-sm-3">Категория</dt><dd class="col-sm-9"><a href="{{ category.get_absolute_url }}">{{ category.name }}</a></dd>
     <dt class="col-sm-3">Выполнение</dt><dd class="col-sm-9">{% include 'planner/includes/task_status.html' %}</dd>
   </dl>
 </div></section>

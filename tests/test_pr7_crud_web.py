@@ -49,13 +49,15 @@ def test_create_and_edit_all_forms(web_db):
     for table, singular, payload in records:
         result = client.post(f"/{table}/new/", payload)
         assert result.status_code == 302, result.content.decode("utf-8")
-        item_id = int(result.url.strip("/").split("/")[-1])
+        item_id = (MODELS[table].objects.get(name=payload["name"]).pk
+                   if table == "categories" else
+                   int(result.url.strip("/").split("/")[-1]))
         created[singular] = item_id
         assert get_item(table, item_id)
     task_data = {
         "title": "Тренировка", "description": "Утром",
         "user_id": created["user"], "category_id": created["category"],
-        "is_completed": "on",
+        "status": "COMPLETED",
     }
     response = client.post("/tasks/new/", task_data)
     assert response.status_code == 302

@@ -1,5 +1,7 @@
 {% if task.is_completed %}
   <span class="badge text-bg-success task-status task-status-complete">Выполнено</span>
+{% elif task.status == "CANCELLED" %}
+  <span class="badge text-bg-secondary task-status task-status-cancelled">Отменено</span>
 {% else %}
   <span class="badge text-bg-primary task-status task-status-open">В работе</span>
 {% endif %}
